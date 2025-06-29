@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'booking_page.dart'; // Import your booking page
+import 'booking_page.dart';
 
 class CarDetailsPage extends StatelessWidget {
   final Map<String, dynamic> car;
@@ -42,7 +42,8 @@ class CarDetailsPage extends StatelessWidget {
               ],
             ),
           ),
-          // Car image and carousel arrows
+
+          // Car image
           Stack(
             alignment: Alignment.center,
             children: [
@@ -82,7 +83,8 @@ class CarDetailsPage extends StatelessWidget {
               ),
             ],
           ),
-          // Warranty bar (optional, can be "Rental Guarantee" or remove)
+
+          // Warranty bar
           if (car['warranty'] != null && car['warranty'].toString().isNotEmpty)
             Row(
               children: [
@@ -135,6 +137,7 @@ class CarDetailsPage extends StatelessWidget {
               ],
             ),
           const SizedBox(height: 16),
+
           // Car name
           Text(
             car['name'] ?? '',
@@ -145,6 +148,7 @@ class CarDetailsPage extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
+
           // Details row
           Row(
             children: [
@@ -165,6 +169,7 @@ class CarDetailsPage extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
+
           // Rental Price
           Row(
             crossAxisAlignment: CrossAxisAlignment.end,
@@ -189,227 +194,127 @@ class CarDetailsPage extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          // Rental duration selector (demo: static)
+
+          // Rental duration selector
           Row(
             children: [
               Icon(Icons.calendar_today, color: Color(0xFFD69C39), size: 20),
               SizedBox(width: 6),
               Text(
                 "Rental period: 1-30 days",
-                style: GoogleFonts.poppins(
-                  color: Colors.white70,
-                  fontWeight: FontWeight.w500,
-                  fontSize: 15,
-                ),
+                style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          // Quick Book CTA
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFFD69C39),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-              padding: EdgeInsets.symmetric(vertical: 16),
-            ),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => BookingPage(car: car)),
-              );
-              // TODO: Implement booking functionality
-            },
-            child: Text(
-              "Book Now",
-              style: GoogleFonts.poppins(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-              ),
-            ),
-          ),
-          const SizedBox(height: 18),
-          // Promotion Details Button (if any)
-          if (car['promotion'] != null &&
-              car['promotion'].toString().isNotEmpty)
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2D2C30),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: ListTile(
-                leading: Icon(Icons.local_offer, color: Color(0xFFD69C39)),
-                title: Text(
-                  "Promotion Details",
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
+
+          // Location
+          Row(
+            children: [
+              Icon(Icons.location_on, color: Color(0xFFD69C39), size: 20),
+              SizedBox(width: 8),
+              Text(
+                car['location'] ?? '',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                 ),
-                trailing: Icon(Icons.expand_more, color: Colors.white),
-                onTap: () {
-                  // Expand/collapse promotion details
-                },
               ),
-            ),
-          const SizedBox(height: 8),
-          // Key Highlights
-          Text(
-            "Key Highlights:",
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-            ),
+            ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 24),
+
+          // Badges
           Wrap(
             spacing: 8,
+            runSpacing: 8,
             children: [
-              Chip(
-                label: Text(
-                  "Luxury",
-                  style: GoogleFonts.poppins(fontSize: 13, color: Colors.white),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.white10,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                backgroundColor: const Color(0xFF48454F),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.home, size: 16, color: Colors.white),
+                    SizedBox(width: 4),
+                    Text(
+                      car['badge'] ?? '',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: car['delivery'] == true
+                      ? Color(0xFFD69C39)
+                      : Colors.white10,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.local_shipping,
+                      size: 16,
+                      color: car['delivery'] == true
+                          ? Colors.black
+                          : Colors.white,
+                    ),
+                    SizedBox(width: 4),
+                    Text(
+                      car['delivery'] == true
+                          ? "Home Delivery"
+                          : "No Home Delivery",
+                      style: GoogleFonts.poppins(
+                        color: car['delivery'] == true
+                            ? Colors.black
+                            : Colors.white,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 32),
+
+          // Book Now Button
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => BookingPage(car: car),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFFD69C39),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              // Add more highlights as needed
-            ],
-          ),
-          const SizedBox(height: 14),
-          // Services
-          Text(
-            "Rental Includes",
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 8,
-            children: [
-              _serviceChip("Comprehensive Insurance"),
-              _serviceChip("24/7 Roadside Assistance"),
-              _serviceChip("Free Cancellation"),
-            ],
-          ),
-          const SizedBox(height: 14),
-          // Location
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Icon(Icons.location_on, color: Color(0xFFD69C39), size: 20),
-              const SizedBox(width: 4),
-              Expanded(
-                child: Text(
-                  car['location'] ?? '',
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w500,
-                  ),
+              child: Text(
+                'Book Now',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 22),
-          // Rental Reviews Section (placeholder)
-          Text(
-            "Reviews",
-            style: GoogleFonts.poppins(
-              color: Colors.white,
-              fontWeight: FontWeight.w600,
-              fontSize: 18,
-            ),
-          ),
-          const SizedBox(height: 8),
-          _reviewTile(
-            user: "Rahul",
-            review:
-                "Great experience! The car was clean and the pickup was smooth.",
-            rating: 5,
-          ),
-          _reviewTile(
-            user: "Ayesha",
-            review: "Easy booking and very responsive support.",
-            rating: 4,
-          ),
-          // Add more reviews as needed
-        ],
-      ),
-    );
-  }
-
-  Widget _serviceChip(String text) {
-    return Chip(
-      label: Text(
-        text,
-        style: GoogleFonts.poppins(fontSize: 13, color: Colors.white),
-      ),
-      backgroundColor: const Color(0xFF48454F),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    );
-  }
-
-  Widget _reviewTile({
-    required String user,
-    required String review,
-    required int rating,
-  }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF2D2C30),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            backgroundColor: Color(0xFFD69C39),
-            child: Text(
-              user[0],
-              style: GoogleFonts.poppins(color: Colors.black),
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  user,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  review,
-                  style: GoogleFonts.poppins(
-                    color: Colors.white70,
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: List.generate(
-                    5,
-                    (i) => Icon(
-                      Icons.star,
-                      size: 16,
-                      color: i < rating ? Color(0xFFD69C39) : Colors.white24,
-                    ),
-                  ),
-                ),
-              ],
             ),
           ),
         ],

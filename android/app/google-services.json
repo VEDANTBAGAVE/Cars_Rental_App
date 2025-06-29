@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "866517428193",
+    "project_id": "vantureapp-36653",
+    "storage_bucket": "vantureapp-36653.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:866517428193:android:53028ed16d7f226386d4a0",
+        "android_client_info": {
+          "package_name": "com.example.car_rental_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "866517428193-olu0fou6391elvgq05rf3215negi17r6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.car_rental_app",
+            "certificate_hash": "abd4f4f24bba96be986ce42384c3aa9c9f30863c"
+          }
+        },
+        {
+          "client_id": "866517428193-ii69r8kehjp3k777q40c45fnbfk2hlph.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAYQkI3Pl03YjLowI9tlZZp7772n8EmLDA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "866517428193-ii69r8kehjp3k777q40c45fnbfk2hlph.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "866517428193-1dq563bo1udrdi0ag3v0oham0p1mh4dp.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.carRentalApp"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

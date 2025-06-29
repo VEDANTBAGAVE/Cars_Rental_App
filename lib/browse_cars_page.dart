@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'car_details_page.dart';
+import '../models/car.dart';
+import '../services/firebase_service.dart';
+import 'package:intl/intl.dart';
 
 class BrowseCarsPage extends StatefulWidget {
   const BrowseCarsPage({super.key});
@@ -10,6 +13,7 @@ class BrowseCarsPage extends StatefulWidget {
 }
 
 class _BrowseCarsPageState extends State<BrowseCarsPage> {
+  final FirebaseService _firebaseService = FirebaseService();
   final List<String> popularCities = [
     "Mumbai",
     "Hyderabad",
@@ -23,45 +27,63 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
     "Chandigarh",
   ];
 
-  // Replace this with actual user location logic (use geolocator package)
-  String userCity = "Mumbai"; // Default/fallback city
+  String userCity = "Mumbai";
+  List<Map<String, dynamic>> cars = [];
+  bool isLoading = true;
 
-  // Dummy car list
-  final List<Map<String, dynamic>> cars = [
-    {
-      'image':
-          'https://imgd.aeplcdn.com/664x374/n/cw/ec/40432/scorpio-n-exterior-right-front-three-quarter-77.avif?auto=compress&w=400',
-      'warranty': '3-Year Warranty',
-      'warrantyDate': 'Till 31 May',
-      'name': 'Mahindra Scorpio N',
-      'isFav': false,
-      'km': '87,744km',
-      'type': 'Automatic',
-      'location': 'Mumbai',
-      'badge': 'National Daily Drive',
-      'delivery': true,
-      'fuel': 'Petrol',
-      'price': '₹40,800',
-      'monthly': '₹490/mo',
-    },
-    {
-      'image':
-          'https://imgd.aeplcdn.com/664x374/n/cw/ec/131825/be-6e-exterior-right-front-three-quarter-5.jpeg?auto=compress&w=400',
-      'warranty': '3-Year Warranty',
-      'warrantyDate': 'Till 31 May',
-      'name': 'Mahindra BE 6',
-      'isFav': false,
-      'km': '87,744km',
-      'type': 'Automatic',
-      'location': 'Pune',
-      'badge': 'National Daily Drive',
-      'delivery': true,
-      'fuel': 'EV',
-      'price': '₹50,800',
-      'monthly': '₹490/mo',
-    },
-    // ... more cars
-  ];
+  @override
+  void initState() {
+    super.initState();
+    loadCars();
+  }
+
+  Future<void> loadCars() async {
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      List<Car> fetchedCars = await _firebaseService.getCars();
+      // Convert Car objects to Map format for your existing UI
+      List<Map<String, dynamic>> convertedCars = fetchedCars
+          .map(
+            (car) => {
+              'image': car.imageUrl,
+              'warranty': '${car.warrantyYear} Year Warranty',
+
+              // 'warrantyDate': car.warrantyDate != null
+              //     ? DateFormat(
+              //         'MMM dd, yyyy',
+              //       ).format(car.warrantyDate!.toDate())
+              //     : 'Till 31 May',
+              'warrantyDate':
+                  'Till ${DateFormat('dd MMM').format(car.warrantyDate!.toDate())}',
+              'name': car.name,
+              'isFav': false,
+              'km': '${car.meter} Km',
+              'type': car.transmissionType,
+              'location': car.location,
+              'badge': 'National Daily Drive',
+              'delivery': car.delivery,
+              'fuel': car.fuelType,
+              'price': '₹${car.pricePerDay.toStringAsFixed(0)}',
+              'monthly':
+                  '₹${(car.pricePerDay / 12).toStringAsFixed(0)} / month ',
+            },
+          )
+          .toList();
+
+      setState(() {
+        cars = convertedCars;
+        isLoading = false;
+      });
+    } catch (e) {
+      print('Error loading cars: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
 
   int get carCount => cars.length;
 
@@ -73,7 +95,6 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
       builder: (context) => Container(
-        // Constrain the height to at most half the screen (adjust as needed)
         constraints: BoxConstraints(
           maxHeight: MediaQuery.of(context).size.height * 1,
         ),
@@ -105,6 +126,15 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return Scaffold(
+        backgroundColor: const Color(0xFF211F24),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFFD69C39)),
+        ),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF211F24),
       body: Stack(
@@ -142,7 +172,7 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
               ),
               // Showing X cars in
               Text(
-                'Showing $carCount cars in',
+                'Showing ${cars.where((car) => car['location'] == userCity).length} cars in',
                 style: GoogleFonts.poppins(
                   color: Colors.white70,
                   fontSize: 14,
@@ -180,9 +210,7 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
                         fontWeight: FontWeight.w600,
                         fontSize: 15,
                         decoration: TextDecoration.underline,
-                        decorationColor: Color(
-                          0xFFD69C39,
-                        ), // This adds underline
+                        decorationColor: Color(0xFFD69C39),
                       ),
                     ),
                   ),
@@ -197,7 +225,7 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
               const SizedBox(height: 90),
             ],
           ),
-          // Floating Filter/Sort Bar (as before)
+          // Floating Filter/Sort Bar
           Positioned(
             left: 0,
             right: 0,
@@ -407,12 +435,11 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
             ),
             SizedBox(height: 8),
             // Badges
-            // Badges
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Wrap(
-                spacing: 8, // space between badges horizontally
-                runSpacing: 8, // space between lines when wrapping
+                spacing: 8,
+                runSpacing: 8,
                 children: [
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -495,7 +522,6 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
                       ],
                     ),
                   ),
-                  // You can add more badges here if needed
                 ],
               ),
             ),

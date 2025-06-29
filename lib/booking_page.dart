@@ -22,7 +22,7 @@ class _BookingPageState extends State<BookingPage> {
   final _phoneController = TextEditingController();
 
   double get dailyRate {
-    // Example: parse '₹40,800' to 40800.0
+    // Parse '₹40,800' to 40800.0
     final rateString =
         widget.car['price']?.replaceAll(RegExp(r'[^\d.]'), '') ?? '0';
     return double.tryParse(rateString) ?? 0.0;
@@ -152,7 +152,7 @@ class _BookingPageState extends State<BookingPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.car['name'] ?? "",
+                      widget.car['name'] ?? '',
                       style: GoogleFonts.poppins(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
@@ -160,7 +160,7 @@ class _BookingPageState extends State<BookingPage> {
                       ),
                     ),
                     Text(
-                      widget.car['type'] ?? "",
+                      widget.car['type'] ?? '',
                       style: GoogleFonts.poppins(
                         color: Colors.white54,
                         fontSize: 13,
@@ -172,6 +172,7 @@ class _BookingPageState extends State<BookingPage> {
             ],
           ),
           const SizedBox(height: 18),
+
           // Pick-up and Drop-off
           _sectionTitle("Pick-up & Drop-off"),
           _dateTimeRow(
@@ -192,157 +193,204 @@ class _BookingPageState extends State<BookingPage> {
             icon: Icons.event_busy,
           ),
           const SizedBox(height: 16),
+
           // Address
           _sectionTitle("Delivery Address"),
           TextField(
             controller: _addressController,
             style: GoogleFonts.poppins(color: Colors.white),
             decoration: InputDecoration(
-              hintText: "Enter your address for delivery",
+              hintText: "Enter your delivery address",
               hintStyle: GoogleFonts.poppins(color: Colors.white38),
-              filled: true,
-              fillColor: const Color(0xFF2D2C30),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.white24),
               ),
-              prefixIcon: Icon(Icons.location_on, color: Color(0xFFD69C39)),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.white24),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Color(0xFFD69C39)),
+              ),
             ),
-            maxLines: 2,
           ),
           const SizedBox(height: 16),
-          // User details
-          _sectionTitle("Contact Details"),
+
+          // Personal Information
+          _sectionTitle("Personal Information"),
           TextField(
             controller: _nameController,
             style: GoogleFonts.poppins(color: Colors.white),
             decoration: InputDecoration(
               hintText: "Full Name",
               hintStyle: GoogleFonts.poppins(color: Colors.white38),
-              filled: true,
-              fillColor: const Color(0xFF2D2C30),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.white24),
               ),
-              prefixIcon: Icon(Icons.person, color: Color(0xFFD69C39)),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.white24),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Color(0xFFD69C39)),
+              ),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 12),
           TextField(
             controller: _phoneController,
             style: GoogleFonts.poppins(color: Colors.white),
-            keyboardType: TextInputType.phone,
             decoration: InputDecoration(
               hintText: "Phone Number",
               hintStyle: GoogleFonts.poppins(color: Colors.white38),
-              filled: true,
-              fillColor: const Color(0xFF2D2C30),
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.white24),
               ),
-              prefixIcon: Icon(Icons.phone, color: Color(0xFFD69C39)),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.white24),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Color(0xFFD69C39)),
+              ),
             ),
           ),
-          const SizedBox(height: 20),
-          // Summary
-          _sectionTitle("Summary"),
-          _summaryRow(
-            "Rental Duration",
-            rentalDuration == Duration.zero
-                ? "--"
-                : "${rentalDuration.inHours ~/ 24} days ${(rentalDuration.inHours % 24)} hrs",
-          ),
-          _summaryRow("Daily Rate", "₹${dailyRate.toStringAsFixed(0)}"),
-          _summaryRow("Total", "₹${totalPrice.toStringAsFixed(0)}"),
           const SizedBox(height: 24),
-          // Confirm Booking Button
-          ElevatedButton.icon(
-            icon: Icon(Icons.check_circle_outline, color: Colors.black),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Color(0xFFD69C39),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              padding: EdgeInsets.symmetric(vertical: 18),
+
+          // Price Summary
+          _sectionTitle("Price Summary"),
+          Container(
+            padding: EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(12),
             ),
-            onPressed: () {
-              // Validation
-              if (pickUpDate == null ||
-                  pickUpTime == null ||
-                  dropOffDate == null ||
-                  dropOffTime == null ||
-                  _addressController.text.trim().isEmpty ||
-                  _nameController.text.trim().isEmpty ||
-                  _phoneController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Please complete all fields!")),
-                );
-                return;
-              }
-              // TODO: Booking logic
-              showDialog(
-                context: context,
-                builder: (_) => AlertDialog(
-                  backgroundColor: Color(0xFF211F24),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  title: Text(
-                    "Booking Confirmed!",
-                    style: GoogleFonts.poppins(
-                      color: Color(0xFFD69C39),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  content: Text(
-                    "Thank you, ${_nameController.text.trim()}!\n"
-                    "Your car will be delivered to:\n${_addressController.text}\n"
-                    "on ${formatDate(pickUpDate)} at ${formatTime(pickUpTime)}.",
-                    style: GoogleFonts.poppins(color: Colors.white70),
-                  ),
-                  actions: [
-                    TextButton(
-                      child: Text(
-                        "OK",
-                        style: GoogleFonts.poppins(color: Color(0xFFD69C39)),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Daily Rate:",
+                      style: GoogleFonts.poppins(
+                        color: Colors.white70,
+                        fontSize: 14,
                       ),
-                      onPressed: () {
-                        Navigator.pop(context);
-                        Navigator.pop(context); // Go back to details/list
-                      },
+                    ),
+                    Text(
+                      "₹${dailyRate.toStringAsFixed(0)}",
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
-              );
-            },
-            label: Text(
-              "Confirm Booking",
-              style: GoogleFonts.poppins(
-                color: Colors.black,
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
+                SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Duration:",
+                      style: GoogleFonts.poppins(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      "${rentalDuration.inDays} days",
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+                Divider(color: Colors.white24, height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "Total:",
+                      style: GoogleFonts.poppins(
+                        color: Color(0xFFD69C39),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      "₹${totalPrice.toStringAsFixed(0)}",
+                      style: GoogleFonts.poppins(
+                        color: Color(0xFFD69C39),
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
+
+          // Confirm Booking Button
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton(
+              onPressed:
+                  (pickUpDate != null &&
+                      dropOffDate != null &&
+                      _nameController.text.isNotEmpty &&
+                      _phoneController.text.isNotEmpty)
+                  ? () {
+                      // Handle booking confirmation
+                      _showBookingConfirmation();
+                    }
+                  : null,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFFD69C39),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                "Confirm Booking",
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 20),
         ],
       ),
     );
   }
 
-  Widget _sectionTitle(String title) => Padding(
-    padding: const EdgeInsets.only(bottom: 6),
-    child: Text(
-      title,
-      style: GoogleFonts.poppins(
-        color: Colors.white,
-        fontWeight: FontWeight.w600,
-        fontSize: 16,
+  Widget _sectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Text(
+        title,
+        style: GoogleFonts.poppins(
+          color: Colors.white,
+          fontWeight: FontWeight.w600,
+          fontSize: 16,
+        ),
       ),
-    ),
-  );
+    );
+  }
 
   Widget _dateTimeRow({
     required String label,
@@ -354,50 +402,45 @@ class _BookingPageState extends State<BookingPage> {
   }) {
     return Row(
       children: [
-        Icon(icon, color: Color(0xFFD69C39)),
-        const SizedBox(width: 10),
-        Expanded(
-          child: GestureDetector(
-            onTap: onDateTap,
-            child: Container(
-              padding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-              decoration: BoxDecoration(
-                color: Color(0xFF2D2C30),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.calendar_today, color: Colors.white38, size: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    date == null ? "Choose Date" : formatDate(date),
-                    style: GoogleFonts.poppins(color: Colors.white),
-                  ),
-                ],
-              ),
+        Icon(icon, color: Color(0xFFD69C39), size: 20),
+        const SizedBox(width: 8),
+        Text(
+          label,
+          style: GoogleFonts.poppins(
+            color: Colors.white,
+            fontWeight: FontWeight.w500,
+            fontSize: 14,
+          ),
+        ),
+        const Spacer(),
+        GestureDetector(
+          onTap: onDateTap,
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: Colors.white24),
+            ),
+            child: Text(
+              formatDate(date),
+              style: GoogleFonts.poppins(color: Colors.white, fontSize: 12),
             ),
           ),
         ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: GestureDetector(
-            onTap: onTimeTap,
-            child: Container(
-              padding: EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-              decoration: BoxDecoration(
-                color: Color(0xFF2D2C30),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.access_time, color: Colors.white38, size: 18),
-                  const SizedBox(width: 8),
-                  Text(
-                    time == null ? "Choose Time" : formatTime(time),
-                    style: GoogleFonts.poppins(color: Colors.white),
-                  ),
-                ],
-              ),
+        const SizedBox(width: 8),
+        GestureDetector(
+          onTap: onTimeTap,
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(color: Colors.white24),
+            ),
+            child: Text(
+              formatTime(time),
+              style: GoogleFonts.poppins(color: Colors.white, fontSize: 12),
             ),
           ),
         ),
@@ -405,24 +448,38 @@ class _BookingPageState extends State<BookingPage> {
     );
   }
 
-  Widget _summaryRow(String label, String value) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 4),
-    child: Row(
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.poppins(color: Colors.white70, fontSize: 15),
-        ),
-        Spacer(),
-        Text(
-          value,
+  void _showBookingConfirmation() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Color(0xFF2D2C30),
+        title: Text(
+          "Booking Confirmed!",
           style: GoogleFonts.poppins(
-            color: Color(0xFFD69C39),
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
           ),
         ),
-      ],
-    ),
-  );
+        content: Text(
+          "Your booking for ${widget.car['name'] ?? ''} has been confirmed. You will receive a confirmation email shortly.",
+          style: GoogleFonts.poppins(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              Navigator.of(context).pop();
+            },
+            child: Text(
+              "OK",
+              style: GoogleFonts.poppins(
+                color: Color(0xFFD69C39),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
