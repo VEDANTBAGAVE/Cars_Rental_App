@@ -44,20 +44,17 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
 
     try {
       List<Car> fetchedCars = await _firebaseService.getCars();
+      print('Fetched ${fetchedCars.length} cars from Firebase'); // Debug print
+
       // Convert Car objects to Map format for your existing UI
       List<Map<String, dynamic>> convertedCars = fetchedCars
           .map(
             (car) => {
               'image': car.imageUrl,
               'warranty': '${car.warrantyYear} Year Warranty',
-
-              // 'warrantyDate': car.warrantyDate != null
-              //     ? DateFormat(
-              //         'MMM dd, yyyy',
-              //       ).format(car.warrantyDate!.toDate())
-              //     : 'Till 31 May',
-              'warrantyDate':
-                  'Till ${DateFormat('dd MMM').format(car.warrantyDate!.toDate())}',
+              'warrantyDate': car.warrantyDate != null
+                  ? 'Till ${DateFormat('dd MMM').format(car.warrantyDate!.toDate())}'
+                  : 'Till 31 May',
               'name': car.name,
               'isFav': false,
               'km': '${car.meter} Km',
@@ -72,6 +69,11 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
             },
           )
           .toList();
+
+      print('Converted ${convertedCars.length} cars'); // Debug print
+      print(
+        'Cars in Mumbai: ${convertedCars.where((car) => car['location'] == 'Mumbai').length}',
+      ); // Debug print
 
       setState(() {
         cars = convertedCars;

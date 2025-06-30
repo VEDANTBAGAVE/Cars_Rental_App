@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'services/firebase_service.dart';
+import 'models/car.dart';
+import 'car_details_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -14,6 +17,25 @@ class _HomePageState extends State<HomePage>
   late Animation<double> animation;
   late AnimationController animController;
   bool isForward = false;
+
+  // Firebase service
+  final FirebaseService _firebaseService = FirebaseService();
+
+  // Data from Firebase
+  List<Car> featuredCars = [];
+  List<Car> dealsCars = [];
+  List<Car> trendingCars = [];
+  List<Car> filteredCars = [];
+
+  // Loading states
+  bool isLoadingFeatured = true;
+  bool isLoadingDeals = true;
+  bool isLoadingTrending = true;
+
+  // Search
+  final TextEditingController _searchController = TextEditingController();
+  List<Car> searchResults = [];
+  bool isSearching = false;
 
   @override
   void initState() {
@@ -32,59 +54,157 @@ class _HomePageState extends State<HomePage>
       ..addListener(() {
         setState(() {});
       });
+
+    // Load data from Firebase
+    _loadHomeData();
   }
 
   @override
   void dispose() {
     animController.dispose();
+    _searchController.dispose();
     super.dispose();
+  }
+
+  // Load all home page data
+  Future<void> _loadHomeData() async {
+    // Reset loading states
+    setState(() {
+      isLoadingFeatured = true;
+      isLoadingDeals = true;
+      isLoadingTrending = true;
+    });
+
+    await Future.wait([
+      _loadFeaturedCars(),
+      _loadDealsCars(),
+      _loadTrendingCars(),
+    ]);
+
+    // Show success message for pull-to-refresh
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Home page refreshed!'),
+        backgroundColor: Color(0xFFD69C39),
+        duration: Duration(seconds: 1),
+      ),
+    );
+  }
+
+  // Load featured cars for carousel
+  Future<void> _loadFeaturedCars() async {
+    try {
+      final cars = await _firebaseService.getFeaturedCars();
+      setState(() {
+        featuredCars = cars;
+        isLoadingFeatured = false;
+      });
+    } catch (e) {
+      print('Error loading featured cars: $e');
+      setState(() {
+        isLoadingFeatured = false;
+      });
+    }
+  }
+
+  // Load deals cars
+  Future<void> _loadDealsCars() async {
+    try {
+      final cars = await _firebaseService.getDealsCars();
+      setState(() {
+        dealsCars = cars;
+        isLoadingDeals = false;
+      });
+    } catch (e) {
+      print('Error loading deals cars: $e');
+      setState(() {
+        isLoadingDeals = false;
+      });
+    }
+  }
+
+  // Load trending cars
+  Future<void> _loadTrendingCars() async {
+    try {
+      final cars = await _firebaseService.getTrendingCars();
+      setState(() {
+        trendingCars = cars;
+        isLoadingTrending = false;
+      });
+    } catch (e) {
+      print('Error loading trending cars: $e');
+      setState(() {
+        isLoadingTrending = false;
+      });
+    }
+  }
+
+  // Search functionality
+  Future<void> _performSearch(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        searchResults = [];
+        isSearching = false;
+      });
+      return;
+    }
+
+    setState(() {
+      isSearching = true;
+    });
+
+    try {
+      final results = await _firebaseService.searchCars(query);
+      setState(() {
+        searchResults = results;
+        isSearching = false;
+      });
+    } catch (e) {
+      print('Error searching cars: $e');
+      setState(() {
+        isSearching = false;
+      });
+    }
+  }
+
+  // Filter cars by price range
+  Future<void> _filterCarsByPrice(int filterIndex) async {
+    double minPrice = 0;
+    double maxPrice = double.infinity;
+
+    switch (filterIndex) {
+      case 0: // Under RS 30,000
+        maxPrice = 30000;
+        break;
+      case 1: // RS 30,000 - 50,000
+        minPrice = 30000;
+        maxPrice = 50000;
+        break;
+      case 2: // RS 50,000 - 100,000
+        minPrice = 50000;
+        maxPrice = 100000;
+        break;
+      case 3: // Over RS 100,000
+        minPrice = 100000;
+        break;
+    }
+
+    try {
+      final cars = await _firebaseService.getCarsByPriceRange(
+        minPrice,
+        maxPrice,
+      );
+      setState(() {
+        filteredCars = cars;
+      });
+    } catch (e) {
+      print('Error filtering cars: $e');
+    }
   }
 
   int _currentIndex = 0;
 
-  final List<Map<String, String>> deals = const [
-    {
-      'image':
-          'https://imgd.aeplcdn.com/664x374/n/cw/ec/40432/scorpio-n-exterior-right-front-three-quarter-77.avif?auto=compress&w=400',
-      'title': 'Mahindra Scorpio N',
-      'discount': 'Rs 3,500 OFF',
-    },
-    {
-      'image':
-          'https://imgd.aeplcdn.com/664x374/n/cw/ec/139585/harrier-ev-exterior-right-front-three-quarter-18.jpeg?auto=compress&w=400',
-      'title': 'Tata Harrier EV',
-      'discount': 'Rs 4,000 OFF',
-    },
-    {
-      'image':
-          'https://imgd.aeplcdn.com/664x374/n/cw/ec/106815/creta-exterior-right-front-three-quarter-5.jpeg?auto=compress&w=400',
-      'title': 'Hyundai Creta',
-      'discount': 'Rs 3,000 OFF',
-    },
-  ];
-
-  final List<Map<String, String>> trending = const [
-    {
-      'image':
-          'https://imgd.aeplcdn.com/664x374/n/cw/ec/171777/kylaq-exterior-right-front-three-quarter-4.jpeg?auto=compress&w=400',
-      'title': 'Skoda Kylaq',
-      'discount': 'Rs 3,500 OFF',
-    },
-    {
-      'image':
-          'https://imgd.aeplcdn.com/664x374/n/cw/ec/124839/thar-roxx-exterior-right-front-three-quarter-25.jpeg?auto=compress&w=400',
-      'title': 'Mahindra Thar Roxx',
-      'discount': 'Rs 3,500 OFF',
-    },
-    {
-      'image':
-          'https://imgd.aeplcdn.com/664x374/n/cw/ec/175183/new-5-series-exterior-right-front-three-quarter.jpeg?auto=compress&w=400',
-      'title': 'BMW 5 Series',
-      'discount': 'Rs 3,500 OFF',
-    },
-  ];
-
-  final List<Map<String, dynamic>> brands = const [
+  final List<Map<String, String>> brands = const [
     {
       'image':
           'https://imgd.aeplcdn.com/0X0/n/cw/ec/9/brands/logos/mahindra.jpg',
@@ -207,11 +327,26 @@ class _HomePageState extends State<HomePage>
                                     right: 60,
                                   ),
                                   child: TextField(
+                                    controller: _searchController,
                                     cursorColor: Colors.white12,
                                     style: const TextStyle(color: Colors.white),
                                     decoration: const InputDecoration(
                                       border: InputBorder.none,
+                                      hintText: 'Search cars...',
+                                      hintStyle: TextStyle(
+                                        color: Colors.white54,
+                                      ),
                                     ),
+                                    onChanged: (value) {
+                                      if (value.isNotEmpty) {
+                                        _performSearch(value);
+                                      } else {
+                                        setState(() {
+                                          searchResults = [];
+                                          isSearching = false;
+                                        });
+                                      }
+                                    },
                                   ),
                                 )
                               : null,
@@ -238,6 +373,11 @@ class _HomePageState extends State<HomePage>
                               } else {
                                 animController.reverse();
                                 isForward = false;
+                                _searchController.clear();
+                                setState(() {
+                                  searchResults = [];
+                                  isSearching = false;
+                                });
                               }
                             },
                           ),
@@ -251,174 +391,284 @@ class _HomePageState extends State<HomePage>
           ),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(
-          15,
-          20,
-          12,
-          80,
-        ), // enough padding for nav bar
-        children: [
-          CarouselSlider(
-            options: CarouselOptions(
-              height: 200,
-              autoPlay: true,
-              enlargeCenterPage: true,
-              viewportFraction: 0.85,
-              aspectRatio: 16 / 9,
-              autoPlayInterval: Duration(seconds: 5),
-              autoPlayAnimationDuration: Duration(milliseconds: 900),
-              enableInfiniteScroll: true,
-            ),
-            items: topOffers.map((offer) {
-              return Builder(
-                builder: (BuildContext context) {
-                  return Container(
-                    margin: EdgeInsets.symmetric(horizontal: 0, vertical: 10),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      color: Color(0xFF26242B),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Color.fromARGB(255, 255, 183, 0),
-                          blurRadius: 6,
-                          offset: Offset(0, 2),
-                        ),
-                      ],
+      body: RefreshIndicator(
+        onRefresh: _loadHomeData,
+        color: Color(0xFFD69C39),
+        backgroundColor: Color(0xFF2D2C30),
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(
+            15,
+            20,
+            12,
+            80,
+          ), // enough padding for nav bar
+          children: [
+            // Search Results
+            if (isSearching)
+              Container(
+                padding: EdgeInsets.all(16),
+                child: Center(
+                  child: CircularProgressIndicator(color: Color(0xFFD69C39)),
+                ),
+              ),
+
+            if (searchResults.isNotEmpty)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Search Results',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Stack(
-                        fit: StackFit.expand,
-                        children: [
-                          Image.network(offer['image']!, fit: BoxFit.cover),
-                          Positioned(
-                            left: 0,
-                            right: 0,
-                            bottom: 0,
-                            child: Container(
-                              color: Colors.black.withOpacity(0.7),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
+                  ),
+                  SizedBox(height: 10),
+                  SizedBox(
+                    height: 220,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: searchResults.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 14),
+                      itemBuilder: (context, index) {
+                        return carCard(searchResults[index]);
+                      },
+                    ),
+                  ),
+                  SizedBox(height: 20),
+                ],
+              ),
+
+            // Featured Cars Carousel
+            if (!isSearching && !isLoadingFeatured)
+              CarouselSlider(
+                options: CarouselOptions(
+                  height: 200,
+                  autoPlay: true,
+                  enlargeCenterPage: true,
+                  viewportFraction: 0.85,
+                  aspectRatio: 16 / 9,
+                  autoPlayInterval: Duration(seconds: 5),
+                  autoPlayAnimationDuration: Duration(milliseconds: 900),
+                  enableInfiniteScroll: true,
+                ),
+                items: featuredCars.map((car) {
+                  return Builder(
+                    builder: (BuildContext context) {
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  CarDetailsPage(car: car.toMap()),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          margin: EdgeInsets.symmetric(
+                            horizontal: 0,
+                            vertical: 10,
+                          ),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16),
+                            color: Color(0xFF26242B),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Color.fromARGB(255, 255, 183, 0),
+                                blurRadius: 6,
+                                offset: Offset(0, 2),
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    offer['title']!,
-                                    style: GoogleFonts.poppins(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                Image.network(car.imageUrl, fit: BoxFit.cover),
+                                Positioned(
+                                  left: 0,
+                                  right: 0,
+                                  bottom: 0,
+                                  child: Container(
+                                    color: Colors.black.withOpacity(0.7),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 8,
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          car.name,
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.white,
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        if (car.hasDiscount)
+                                          Text(
+                                            'Rs ${car.discountAmount.toStringAsFixed(0)} OFF',
+                                            style: GoogleFonts.poppins(
+                                              color: Color(0xFFD69C39),
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                   ),
-                                  Text(
-                                    offer['discount']!,
-                                    style: GoogleFonts.poppins(
-                                      color: Color(0xFFD69C39),
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
-                    ),
+                        ),
+                      );
+                    },
                   );
-                },
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 18),
-          Row(
-            children: [
-              Icon(
-                Icons.local_offer_rounded,
-                size: 30,
-                color: Color(0xFFD69C39),
+                }).toList(),
               ),
-              SizedBox(width: 5),
-              sectionTitle('Deals'),
-            ],
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            height: 180,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: deals.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 14),
-              itemBuilder: (context, index) {
-                return carCard(deals[index]);
-              },
-            ),
-          ),
-          const SizedBox(height: 18),
-          Row(
-            children: [
-              Icon(Icons.explore_rounded, size: 30, color: Color(0xFFD69C39)),
-              SizedBox(width: 5),
-              sectionTitle('Explore Cars for You'),
-            ],
-          ),
-          const SizedBox(height: 10),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: List.generate(filters.length, (index) {
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      selectedFilterIndex = index;
-                    });
-                  },
-                  child: filterChip(
-                    filters[index],
-                    selectedFilterIndex == index,
+
+            if (isLoadingFeatured)
+              Container(
+                height: 200,
+                child: Center(
+                  child: CircularProgressIndicator(color: Color(0xFFD69C39)),
+                ),
+              ),
+
+            const SizedBox(height: 18),
+
+            // Deals Section
+            if (!isSearching)
+              Row(
+                children: [
+                  Icon(
+                    Icons.local_offer_rounded,
+                    size: 30,
+                    color: Color(0xFFD69C39),
                   ),
-                );
-              }),
-            ),
-          ),
-          const SizedBox(height: 15),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: brands
-                  .map((brand) => brandButton(brand['image'], brand['name']))
-                  .toList(),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              Icon(
-                Icons.trending_up_rounded,
-                size: 30,
-                color: Color(0xFFD69C39),
+                  SizedBox(width: 5),
+                  sectionTitle('Deals'),
+                ],
               ),
-              SizedBox(width: 5),
-              sectionTitle('Trending Cars in India'),
-            ],
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            height: 220,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: trending.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 14),
-              itemBuilder: (context, index) {
-                return carCard(trending[index]);
-              },
-            ),
-          ),
-        ],
+            const SizedBox(height: 10),
+
+            if (!isSearching && !isLoadingDeals)
+              SizedBox(
+                height: 180,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: dealsCars.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 14),
+                  itemBuilder: (context, index) {
+                    return carCard(dealsCars[index]);
+                  },
+                ),
+              ),
+
+            if (isLoadingDeals)
+              Container(
+                height: 180,
+                child: Center(
+                  child: CircularProgressIndicator(color: Color(0xFFD69C39)),
+                ),
+              ),
+
+            const SizedBox(height: 18),
+
+            // Explore Cars Section
+            if (!isSearching)
+              Row(
+                children: [
+                  Icon(
+                    Icons.explore_rounded,
+                    size: 30,
+                    color: Color(0xFFD69C39),
+                  ),
+                  SizedBox(width: 5),
+                  sectionTitle('Explore Cars for You'),
+                ],
+              ),
+            const SizedBox(height: 10),
+
+            if (!isSearching)
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: List.generate(filters.length, (index) {
+                    return GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          selectedFilterIndex = index;
+                        });
+                        _filterCarsByPrice(index);
+                      },
+                      child: filterChip(
+                        filters[index],
+                        selectedFilterIndex == index,
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            const SizedBox(height: 15),
+
+            if (!isSearching)
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: brands
+                      .map(
+                        (brand) => brandButton(brand['image']!, brand['name']!),
+                      )
+                      .toList(),
+                ),
+              ),
+            const SizedBox(height: 24),
+
+            // Trending Cars Section
+            if (!isSearching)
+              Row(
+                children: [
+                  Icon(
+                    Icons.trending_up_rounded,
+                    size: 30,
+                    color: Color(0xFFD69C39),
+                  ),
+                  SizedBox(width: 5),
+                  sectionTitle('Trending Cars in India'),
+                ],
+              ),
+            const SizedBox(height: 8),
+
+            if (!isSearching && !isLoadingTrending)
+              SizedBox(
+                height: 220,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: trendingCars.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 14),
+                  itemBuilder: (context, index) {
+                    return carCard(trendingCars[index]);
+                  },
+                ),
+              ),
+
+            if (isLoadingTrending)
+              Container(
+                height: 220,
+                child: Center(
+                  child: CircularProgressIndicator(color: Color(0xFFD69C39)),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -437,50 +687,89 @@ class _HomePageState extends State<HomePage>
     );
   }
 
-  Widget carCard(Map<String, String> car) {
-    return Container(
-      width: 200,
-      decoration: BoxDecoration(
-        color: const Color(0xFF26242B),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ClipRRect(
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            child: Image.network(
-              car['image']!,
-              width: 200,
-              height: 100,
-              fit: BoxFit.cover,
-            ),
+  Widget carCard(Car car) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => CarDetailsPage(car: car.toMap()),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            child: Text(
-              car['title']!,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
-                fontSize: 14,
+        );
+      },
+      child: Container(
+        width: 200,
+        decoration: BoxDecoration(
+          color: const Color(0xFF26242B),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
+              ),
+              child: Image.network(
+                car.imageUrl,
+                width: 200,
+                height: 100,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    width: 200,
+                    height: 100,
+                    color: Colors.grey[800],
+                    child: Icon(
+                      Icons.directions_car,
+                      color: Colors.grey[600],
+                      size: 40,
+                    ),
+                  );
+                },
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text(
-              car['discount']!,
-              style: GoogleFonts.poppins(
-                color: const Color(0xFFD69C39),
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              child: Text(
+                car.name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 14,
+                ),
               ),
             ),
-          ),
-        ],
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '₹${car.pricePerDay.toStringAsFixed(0)}/day',
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFFD69C39),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                  if (car.hasDiscount)
+                    Text(
+                      '₹${car.discountAmount.toStringAsFixed(0)} OFF',
+                      style: GoogleFonts.poppins(
+                        color: Colors.green,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 11,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            SizedBox(height: 8),
+          ],
+        ),
       ),
     );
   }

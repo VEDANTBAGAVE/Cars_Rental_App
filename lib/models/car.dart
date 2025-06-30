@@ -15,6 +15,11 @@ class Car {
   final Timestamp? warrantyDate;
   final int meter; // Assuming this is the mileage in kilometers
   final bool delivery;
+  final bool isFeatured;
+  final bool hasDiscount;
+  final double discountAmount;
+  final int rentalCount;
+  final String brand;
 
   Car({
     required this.id,
@@ -31,6 +36,11 @@ class Car {
     this.warrantyDate,
     required this.meter,
     required this.delivery,
+    this.isFeatured = false,
+    this.hasDiscount = false,
+    this.discountAmount = 0.0,
+    this.rentalCount = 0,
+    this.brand = '',
   });
 
   Map<String, dynamic> toMap() {
@@ -49,6 +59,11 @@ class Car {
       'warrantyDate': warrantyDate,
       'meter': meter,
       'delivery': delivery,
+      'isFeatured': isFeatured,
+      'hasDiscount': hasDiscount,
+      'discountAmount': discountAmount,
+      'rentalCount': rentalCount,
+      'brand': brand,
     };
   }
 
@@ -68,6 +83,17 @@ class Car {
       warrantyDate: map['warrantyDate'],
       meter: map['meter'] ?? 0,
       delivery: map['delivery'] ?? false,
+      isFeatured: map['isFeatured'] ?? false,
+      hasDiscount: map['hasDiscount'] ?? false,
+      discountAmount: (map['discountAmount'] ?? 0).toDouble(),
+      rentalCount: map['rentalCount'] ?? 0,
+      brand: map['brand'] ?? '',
     );
   }
+
+  // Get discounted price
+  double get discountedPrice => pricePerDay - discountAmount;
+  
+  // Get discount percentage
+  double get discountPercentage => pricePerDay > 0 ? (discountAmount / pricePerDay) * 100 : 0;
 }
