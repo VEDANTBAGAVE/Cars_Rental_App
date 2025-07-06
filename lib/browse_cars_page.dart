@@ -30,6 +30,11 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
   String userCity = "Mumbai";
   List<Car> cars = [];
   bool isLoading = true;
+  List<Car> filteredCars = [];
+  String? selectedBrand;
+  String? selectedFuel;
+  RangeValues? selectedPriceRange;
+  String? selectedSort;
 
   @override
   void initState() {
@@ -46,10 +51,13 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
       List<Car> fetchedCars = await _firebaseService.getCars();
       print('Fetched ${fetchedCars.length} cars from Firebase'); // Debug print
 
-      print('Cars in Mumbai: ${fetchedCars.where((car) => car.location == 'Mumbai').length}'); // Debug print
+      print(
+        'Cars in Mumbai: ${fetchedCars.where((car) => car.location == 'Mumbai').length}',
+      ); // Debug print
 
       setState(() {
         cars = fetchedCars;
+        filteredCars = fetchedCars;
         isLoading = false;
       });
     } catch (e) {
@@ -97,6 +105,236 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
         userCity = selected;
       });
     }
+  }
+
+  void _openFilterSheet() async {
+    final brands = cars.map((c) => c.brand).toSet().toList();
+    final fuels = cars.map((c) => c.fuelType).toSet().toList();
+    double minPrice = cars.isEmpty
+        ? 0
+        : cars.map((c) => c.pricePerDay).reduce((a, b) => a < b ? a : b);
+    double maxPrice = cars.isEmpty
+        ? 100000
+        : cars.map((c) => c.pricePerDay).reduce((a, b) => a > b ? a : b);
+    RangeValues priceRange =
+        selectedPriceRange ?? RangeValues(minPrice, maxPrice);
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Color(0xFF211F24),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Filter by',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Brand',
+                    style: GoogleFonts.poppins(color: Colors.white70),
+                  ),
+                  Wrap(
+                    spacing: 15,
+                    children: brands
+                        .map(
+                          (brand) => ChoiceChip(
+                            label: Text(
+                              brand,
+                              style: GoogleFonts.poppins(
+                                color: selectedBrand == brand
+                                    ? Colors.black
+                                    : Colors.white,
+                              ),
+                            ),
+                            selected: selectedBrand == brand,
+                            selectedColor: Color(0xFFD69C39),
+                            backgroundColor: Color(0xFF26242B),
+                            onSelected: (_) =>
+                                setModalState(() => selectedBrand = brand),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                  SizedBox(height: 25),
+                  Text(
+                    'Fuel Type',
+                    style: GoogleFonts.poppins(color: Colors.white70),
+                  ),
+                  Wrap(
+                    spacing: 8,
+                    children: fuels
+                        .map(
+                          (fuel) => ChoiceChip(
+                            label: Text(
+                              fuel,
+                              style: GoogleFonts.poppins(
+                                color: selectedFuel == fuel
+                                    ? Colors.black
+                                    : Colors.white,
+                              ),
+                            ),
+                            selected: selectedFuel == fuel,
+                            selectedColor: Color(0xFFD69C39),
+                            backgroundColor: Color(0xFF26242B),
+                            onSelected: (_) =>
+                                setModalState(() => selectedFuel = fuel),
+                          ),
+                        )
+                        .toList(),
+                  ),
+                  SizedBox(height: 16),
+                  Text(
+                    'Price Range',
+                    style: GoogleFonts.poppins(color: Colors.white70),
+                  ),
+                  RangeSlider(
+                    values: priceRange,
+                    min: minPrice,
+                    max: maxPrice,
+                    divisions: 10,
+                    activeColor: Color(0xFFD69C39),
+                    inactiveColor: Colors.white24,
+                    labels: RangeLabels(
+                      '₹${priceRange.start.toInt()}',
+                      '₹${priceRange.end.toInt()}',
+                    ),
+                    onChanged: (range) =>
+                        setModalState(() => priceRange = range),
+                  ),
+                  SizedBox(height: 18),
+                  Row(
+                    children: [
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFFD69C39),
+                          foregroundColor: Colors.black,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            selectedBrand = null;
+                            selectedFuel = null;
+                            selectedPriceRange = null;
+                            filteredCars = List.from(cars);
+                          });
+                          Navigator.pop(context);
+                        },
+                        child: Text('Clear'),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Color(0xFFD69C39),
+                            foregroundColor: Colors.black,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              selectedPriceRange = priceRange;
+                              filteredCars = cars.where((car) {
+                                final brandMatch =
+                                    selectedBrand == null ||
+                                    car.brand == selectedBrand;
+                                final fuelMatch =
+                                    selectedFuel == null ||
+                                    car.fuelType == selectedFuel;
+                                final priceMatch =
+                                    (car.pricePerDay >= priceRange.start &&
+                                    car.pricePerDay <= priceRange.end);
+                                return brandMatch && fuelMatch && priceMatch;
+                              }).toList();
+                            });
+                            Navigator.pop(context);
+                          },
+                          child: Text('Apply'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _openSortSheet() async {
+    final sorts = ['Price: Low to High', 'Price: High to Low', 'Most Popular'];
+    await showModalBottomSheet(
+      context: context,
+      backgroundColor: Color(0xFF211F24),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Sort by',
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+              SizedBox(height: 16),
+              ...sorts.map(
+                (sort) => ListTile(
+                  title: Text(
+                    sort,
+                    style: GoogleFonts.poppins(
+                      color: selectedSort == sort
+                          ? Color(0xFFD69C39)
+                          : Colors.white,
+                    ),
+                  ),
+                  onTap: () {
+                    setState(() {
+                      selectedSort = sort;
+                      if (sort == 'Price: Low to High') {
+                        filteredCars.sort(
+                          (a, b) => a.pricePerDay.compareTo(b.pricePerDay),
+                        );
+                      } else if (sort == 'Price: High to Low') {
+                        filteredCars.sort(
+                          (a, b) => b.pricePerDay.compareTo(a.pricePerDay),
+                        );
+                      } else if (sort == 'Most Popular') {
+                        filteredCars.sort(
+                          (a, b) => b.rentalCount.compareTo(a.rentalCount),
+                        );
+                      }
+                    });
+                    Navigator.pop(context);
+                  },
+                  trailing: selectedSort == sort
+                      ? Icon(Icons.check, color: Color(0xFFD69C39))
+                      : null,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -147,7 +385,7 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
               ),
               // Showing X cars in
               Text(
-                'Showing ${cars.where((car) => car.location == userCity).length} cars in',
+                'Showing ${filteredCars.where((car) => car.location == userCity).length} cars in',
                 style: GoogleFonts.poppins(
                   color: Colors.white70,
                   fontSize: 14,
@@ -193,7 +431,7 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
               ),
               const SizedBox(height: 16),
               // Car List
-              ...cars
+              ...filteredCars
                   .where((car) => car.location == userCity)
                   .map((car) => carCard(car)),
               const SizedBox(height: 90),
@@ -216,9 +454,7 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     GestureDetector(
-                      onTap: () {
-                        /* open filter sheet */
-                      },
+                      onTap: _openFilterSheet,
                       child: Row(
                         children: [
                           Icon(Icons.tune, color: Colors.black, size: 20),
@@ -235,9 +471,7 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
                     ),
                     SizedBox(width: 20),
                     GestureDetector(
-                      onTap: () {
-                        /* open sort sheet */
-                      },
+                      onTap: _openSortSheet,
                       child: Row(
                         children: [
                           Icon(Icons.sort, color: Colors.black, size: 20),
@@ -281,7 +515,7 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
       'price': '₹${car.pricePerDay.toStringAsFixed(0)}',
       'monthly': '₹${(car.pricePerDay / 12).toStringAsFixed(0)} / month ',
     };
-    
+
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -469,7 +703,9 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
                         Icon(
                           Icons.local_shipping,
                           size: 16,
-                          color: carMap['delivery'] ? Colors.black : Colors.white,
+                          color: carMap['delivery']
+                              ? Colors.black
+                              : Colors.white,
                         ),
                         SizedBox(width: 4),
                         Text(
@@ -477,9 +713,9 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
                               ? "Home Delivery"
                               : "No Home Delivery",
                           style: GoogleFonts.poppins(
-                                                      color: carMap['delivery']
-                              ? Colors.black
-                              : Colors.white,
+                            color: carMap['delivery']
+                                ? Colors.black
+                                : Colors.white,
                             fontSize: 12,
                           ),
                         ),
