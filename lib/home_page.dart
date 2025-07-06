@@ -706,28 +706,55 @@ class _HomePageState extends State<HomePage>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
-              ),
-              child: Image.network(
-                car.imageUrl,
-                width: 200,
-                height: 100,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
+            Stack(
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(16),
+                  ),
+                  child: Image.network(
+                    car.imageUrl,
                     width: 200,
                     height: 100,
-                    color: Colors.grey[800],
-                    child: Icon(
-                      Icons.directions_car,
-                      color: Colors.grey[600],
-                      size: 40,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 200,
+                        height: 100,
+                        color: Colors.grey[800],
+                        child: Icon(
+                          Icons.directions_car,
+                          color: Colors.grey[600],
+                          size: 40,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                if (car.hasDiscount)
+                  Positioned(
+                    left: 8,
+                    top: 8,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '${car.discountPercentage.toStringAsFixed(0)}% OFF',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
-                  );
-                },
-              ),
+                  ),
+              ],
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
@@ -744,20 +771,38 @@ class _HomePageState extends State<HomePage>
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '₹${car.pricePerDay.toStringAsFixed(0)}/day',
-                    style: GoogleFonts.poppins(
-                      color: const Color(0xFFD69C39),
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
+                  Row(
+                    children: [
+                      if (car.hasDiscount) ...[
+                        Text(
+                          '₹${car.pricePerDay.toStringAsFixed(0)}',
+                          style: GoogleFonts.poppins(
+                            color: Colors.white54,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 12,
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                      ],
+                      Text(
+                        car.hasDiscount 
+                            ? '₹${car.discountedPrice.toStringAsFixed(0)}/day'
+                            : '₹${car.pricePerDay.toStringAsFixed(0)}/day',
+                        style: GoogleFonts.poppins(
+                          color: const Color(0xFFD69C39),
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
                   ),
                   if (car.hasDiscount)
                     Text(
-                      '₹${car.discountAmount.toStringAsFixed(0)} OFF',
+                      '${car.discountPercentage.toStringAsFixed(0)}% OFF',
                       style: GoogleFonts.poppins(
                         color: Colors.green,
                         fontWeight: FontWeight.w600,

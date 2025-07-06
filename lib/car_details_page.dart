@@ -253,26 +253,63 @@ class _CarDetailsPageState extends State<CarDetailsPage> {
           const SizedBox(height: 16),
 
           // Rental Price
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                '₹${safe(widget.car.pricePerDay, 0.0)}',
-                style: GoogleFonts.poppins(
-                  color: const Color(0xFFD69C39),
-                  fontWeight: FontWeight.bold,
-                  fontSize: 24,
-                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (widget.car.hasDiscount) ...[
+                    Text(
+                      '₹${safe(widget.car.pricePerDay, 0.0)}',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white54,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 18,
+                        decoration: TextDecoration.lineThrough,
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                  ],
+                  Text(
+                    widget.car.hasDiscount 
+                        ? '₹${safe(widget.car.discountedPrice, 0.0)}'
+                        : '₹${safe(widget.car.pricePerDay, 0.0)}',
+                    style: GoogleFonts.poppins(
+                      color: const Color(0xFFD69C39),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    "per day",
+                    style: GoogleFonts.poppins(
+                      color: Colors.white54,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Text(
-                "per day",
-                style: GoogleFonts.poppins(
-                  color: Colors.white54,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
+              if (widget.car.hasDiscount) ...[
+                SizedBox(height: 4),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    '${widget.car.discountPercentage.toStringAsFixed(0)}% OFF',
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
+                    ),
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
           const SizedBox(height: 8),

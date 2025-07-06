@@ -23,7 +23,7 @@ class _BookingPageState extends State<BookingPage> {
   final _phoneController = TextEditingController();
 
   double get dailyRate {
-    return widget.car.pricePerDay;
+    return widget.car.hasDiscount ? widget.car.discountedPrice : widget.car.pricePerDay;
   }
 
   Duration get rentalDuration {
@@ -271,6 +271,51 @@ class _BookingPageState extends State<BookingPage> {
             ),
             child: Column(
               children: [
+                if (widget.car.hasDiscount) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Original Price:",
+                        style: GoogleFonts.poppins(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                      Text(
+                        "₹${widget.car.pricePerDay.toStringAsFixed(0)}",
+                        style: GoogleFonts.poppins(
+                          color: Colors.white54,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          decoration: TextDecoration.lineThrough,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 4),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Discount:",
+                        style: GoogleFonts.poppins(
+                          color: Colors.green,
+                          fontSize: 14,
+                        ),
+                      ),
+                      Text(
+                        "-₹${widget.car.discountAmount.toStringAsFixed(0)} (${widget.car.discountPercentage.toStringAsFixed(0)}%)",
+                        style: GoogleFonts.poppins(
+                          color: Colors.green,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8),
+                ],
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [

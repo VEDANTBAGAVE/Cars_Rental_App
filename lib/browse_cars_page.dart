@@ -512,8 +512,17 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
       'badge': 'National Daily Drive',
       'delivery': car.delivery,
       'fuel': car.fuelType,
-      'price': '₹${car.pricePerDay.toStringAsFixed(0)}',
-      'monthly': '₹${(car.pricePerDay / 12).toStringAsFixed(0)} / month ',
+      'price': car.hasDiscount 
+          ? '₹${car.discountedPrice.toStringAsFixed(0)}'
+          : '₹${car.pricePerDay.toStringAsFixed(0)}',
+      'originalPrice': car.hasDiscount 
+          ? '₹${car.pricePerDay.toStringAsFixed(0)}'
+          : null,
+      'monthly': car.hasDiscount 
+          ? '₹${(car.discountedPrice / 12).toStringAsFixed(0)} / month '
+          : '₹${(car.pricePerDay / 12).toStringAsFixed(0)} / month ',
+      'hasDiscount': car.hasDiscount,
+      'discountPercentage': car.discountPercentage,
     };
 
     return GestureDetector(
@@ -546,6 +555,30 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
                     fit: BoxFit.cover,
                   ),
                 ),
+                if (carMap['hasDiscount']) ...[
+                  Positioned(
+                    left: 10,
+                    top: 10,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '${carMap['discountPercentage'].toStringAsFixed(0)}% OFF',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
                 if (carMap['warranty'] != null) ...[
                   Positioned(
                     left: 0,
@@ -758,25 +791,60 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
             // Price and monthly
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    carMap['price'],
-                    style: GoogleFonts.poppins(
-                      color: Color(0xFFD69C39),
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
+                  Row(
+                    children: [
+                      if (carMap['hasDiscount'] && carMap['originalPrice'] != null) ...[
+                        Text(
+                          carMap['originalPrice'],
+                          style: GoogleFonts.poppins(
+                            color: Colors.white54,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                            decoration: TextDecoration.lineThrough,
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                      ],
+                      Text(
+                        carMap['price'],
+                        style: GoogleFonts.poppins(
+                          color: Color(0xFFD69C39),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                      Spacer(),
+                      Text(
+                        carMap['monthly'],
+                        style: GoogleFonts.poppins(
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   ),
-                  Spacer(),
-                  Text(
-                    carMap['monthly'],
-                    style: GoogleFonts.poppins(
-                      color: Colors.white70,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
+                  if (carMap['hasDiscount']) ...[
+                    SizedBox(height: 4),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '${carMap['discountPercentage'].toStringAsFixed(0)}% OFF',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 10,
+                        ),
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
