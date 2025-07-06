@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'models/car.dart';
 
 class BookingPage extends StatefulWidget {
-  final Map<String, dynamic> car;
+  final Car car;
 
   const BookingPage({super.key, required this.car});
 
@@ -22,10 +23,7 @@ class _BookingPageState extends State<BookingPage> {
   final _phoneController = TextEditingController();
 
   double get dailyRate {
-    // Parse '₹40,800' to 40800.0
-    final rateString =
-        widget.car['price']?.replaceAll(RegExp(r'[^\d.]'), '') ?? '0';
-    return double.tryParse(rateString) ?? 0.0;
+    return widget.car.pricePerDay;
   }
 
   Duration get rentalDuration {
@@ -98,7 +96,7 @@ class _BookingPageState extends State<BookingPage> {
       setState(() {
         if (isPickUp) {
           pickUpTime = time;
-          if (dropOffTime == null) dropOffTime = time;
+          dropOffTime ??= time;
         } else {
           dropOffTime = time;
         }
@@ -140,7 +138,7 @@ class _BookingPageState extends State<BookingPage> {
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
                 child: Image.network(
-                  widget.car['image'],
+                  widget.car.imageUrl,
                   width: 90,
                   height: 60,
                   fit: BoxFit.cover,
@@ -152,7 +150,7 @@ class _BookingPageState extends State<BookingPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.car['name'] ?? '',
+                      widget.car.name,
                       style: GoogleFonts.poppins(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
@@ -160,7 +158,7 @@ class _BookingPageState extends State<BookingPage> {
                       ),
                     ),
                     Text(
-                      widget.car['type'] ?? '',
+                      '${widget.car.brand} - ${widget.car.transmissionType}',
                       style: GoogleFonts.poppins(
                         color: Colors.white54,
                         fontSize: 13,
@@ -461,7 +459,7 @@ class _BookingPageState extends State<BookingPage> {
           ),
         ),
         content: Text(
-          "Your booking for ${widget.car['name'] ?? ''} has been confirmed. You will receive a confirmation email shortly.",
+          "Your booking for ${widget.car.name} has been confirmed. You will receive a confirmation email shortly.",
           style: GoogleFonts.poppins(color: Colors.white70),
         ),
         actions: [

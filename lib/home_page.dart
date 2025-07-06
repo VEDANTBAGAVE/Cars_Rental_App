@@ -202,7 +202,7 @@ class _HomePageState extends State<HomePage>
     }
   }
 
-  int _currentIndex = 0;
+  final int _currentIndex = 0;
 
   final List<Map<String, String>> brands = const [
     {
@@ -462,7 +462,7 @@ class _HomePageState extends State<HomePage>
                             context,
                             MaterialPageRoute(
                               builder: (context) =>
-                                  CarDetailsPage(car: car.toMap()),
+                                  CarDetailsPage(car: car),
                             ),
                           );
                         },
@@ -534,7 +534,7 @@ class _HomePageState extends State<HomePage>
               ),
 
             if (isLoadingFeatured)
-              Container(
+              SizedBox(
                 height: 200,
                 child: Center(
                   child: CircularProgressIndicator(color: Color(0xFFD69C39)),
@@ -572,7 +572,7 @@ class _HomePageState extends State<HomePage>
               ),
 
             if (isLoadingDeals)
-              Container(
+              SizedBox(
                 height: 180,
                 child: Center(
                   child: CircularProgressIndicator(color: Color(0xFFD69C39)),
@@ -661,7 +661,7 @@ class _HomePageState extends State<HomePage>
               ),
 
             if (isLoadingTrending)
-              Container(
+              SizedBox(
                 height: 220,
                 child: Center(
                   child: CircularProgressIndicator(color: Color(0xFFD69C39)),
@@ -693,7 +693,7 @@ class _HomePageState extends State<HomePage>
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => CarDetailsPage(car: car.toMap()),
+            builder: (context) => CarDetailsPage(car: car),
           ),
         );
       },

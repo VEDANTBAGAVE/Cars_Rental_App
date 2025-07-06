@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 // import your pages here:
 import 'home_page.dart';
 import 'browse_cars_page.dart';
-import 'car_details_page.dart';
 import 'account_page.dart';
 import 'sell_car_page.dart';
 import 'inbox_page.dart';

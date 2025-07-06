@@ -28,7 +28,7 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
   ];
 
   String userCity = "Mumbai";
-  List<Map<String, dynamic>> cars = [];
+  List<Car> cars = [];
   bool isLoading = true;
 
   @override
@@ -46,37 +46,10 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
       List<Car> fetchedCars = await _firebaseService.getCars();
       print('Fetched ${fetchedCars.length} cars from Firebase'); // Debug print
 
-      // Convert Car objects to Map format for your existing UI
-      List<Map<String, dynamic>> convertedCars = fetchedCars
-          .map(
-            (car) => {
-              'image': car.imageUrl,
-              'warranty': '${car.warrantyYear} Year Warranty',
-              'warrantyDate': car.warrantyDate != null
-                  ? 'Till ${DateFormat('dd MMM').format(car.warrantyDate!.toDate())}'
-                  : 'Till 31 May',
-              'name': car.name,
-              'isFav': false,
-              'km': '${car.meter} Km',
-              'type': car.transmissionType,
-              'location': car.location,
-              'badge': 'National Daily Drive',
-              'delivery': car.delivery,
-              'fuel': car.fuelType,
-              'price': '₹${car.pricePerDay.toStringAsFixed(0)}',
-              'monthly':
-                  '₹${(car.pricePerDay / 12).toStringAsFixed(0)} / month ',
-            },
-          )
-          .toList();
-
-      print('Converted ${convertedCars.length} cars'); // Debug print
-      print(
-        'Cars in Mumbai: ${convertedCars.where((car) => car['location'] == 'Mumbai').length}',
-      ); // Debug print
+      print('Cars in Mumbai: ${fetchedCars.where((car) => car.location == 'Mumbai').length}'); // Debug print
 
       setState(() {
-        cars = convertedCars;
+        cars = fetchedCars;
         isLoading = false;
       });
     } catch (e) {
@@ -174,7 +147,7 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
               ),
               // Showing X cars in
               Text(
-                'Showing ${cars.where((car) => car['location'] == userCity).length} cars in',
+                'Showing ${cars.where((car) => car.location == userCity).length} cars in',
                 style: GoogleFonts.poppins(
                   color: Colors.white70,
                   fontSize: 14,
@@ -221,9 +194,8 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
               const SizedBox(height: 16),
               // Car List
               ...cars
-                  .where((car) => car['location'] == userCity)
-                  .map((car) => carCard(car))
-                  .toList(),
+                  .where((car) => car.location == userCity)
+                  .map((car) => carCard(car)),
               const SizedBox(height: 90),
             ],
           ),
@@ -290,7 +262,26 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
     );
   }
 
-  Widget carCard(Map<String, dynamic> car) {
+  Widget carCard(Car car) {
+    // Convert Car to Map for UI display
+    Map<String, dynamic> carMap = {
+      'image': car.imageUrl,
+      'warranty': '${car.warrantyYear} Year Warranty',
+      'warrantyDate': car.warrantyDate != null
+          ? 'Till ${DateFormat('dd MMM').format(car.warrantyDate!.toDate())}'
+          : 'Till 31 May',
+      'name': car.name,
+      'isFav': false,
+      'km': '${car.meter} Km',
+      'type': car.transmissionType,
+      'location': car.location,
+      'badge': 'National Daily Drive',
+      'delivery': car.delivery,
+      'fuel': car.fuelType,
+      'price': '₹${car.pricePerDay.toStringAsFixed(0)}',
+      'monthly': '₹${(car.pricePerDay / 12).toStringAsFixed(0)} / month ',
+    };
+    
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -315,13 +306,13 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
                     top: Radius.circular(16),
                   ),
                   child: Image.network(
-                    car['image'],
+                    carMap['image'],
                     width: double.infinity,
                     height: 150,
                     fit: BoxFit.cover,
                   ),
                 ),
-                if (car['warranty'] != null) ...[
+                if (carMap['warranty'] != null) ...[
                   Positioned(
                     left: 0,
                     top: 10,
@@ -338,7 +329,7 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
                         ),
                       ),
                       child: Text(
-                        car['warranty'],
+                        carMap['warranty'],
                         style: GoogleFonts.poppins(
                           color: Colors.black,
                           fontSize: 13,
@@ -363,7 +354,7 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
                         ),
                       ),
                       child: Text(
-                        car['warrantyDate'],
+                        carMap['warrantyDate'],
                         style: GoogleFonts.poppins(
                           color: Colors.white,
                           fontSize: 12,
@@ -382,7 +373,7 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
                 children: [
                   Expanded(
                     child: Text(
-                      car['name'],
+                      carMap['name'],
                       style: GoogleFonts.poppins(
                         color: Colors.white,
                         fontWeight: FontWeight.w600,
@@ -393,11 +384,11 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
                   GestureDetector(
                     onTap: () {
                       setState(() {
-                        car['isFav'] = !(car['isFav'] ?? false);
+                        carMap['isFav'] = !(carMap['isFav'] ?? false);
                       });
                     },
                     child: Icon(
-                      car['isFav'] ? Icons.favorite : Icons.favorite_border,
+                      carMap['isFav'] ? Icons.favorite : Icons.favorite_border,
                       color: Color(0xFFD69C39),
                     ),
                   ),
@@ -410,7 +401,7 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
               child: Row(
                 children: [
                   Text(
-                    car['km'],
+                    carMap['km'],
                     style: GoogleFonts.poppins(
                       color: Colors.white70,
                       fontSize: 13,
@@ -418,7 +409,7 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
                   ),
                   Text('  •  ', style: TextStyle(color: Colors.white24)),
                   Text(
-                    car['type'],
+                    carMap['type'],
                     style: GoogleFonts.poppins(
                       color: Colors.white70,
                       fontSize: 13,
@@ -426,7 +417,7 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
                   ),
                   Text('  •  ', style: TextStyle(color: Colors.white24)),
                   Text(
-                    car['location'],
+                    carMap['location'],
                     style: GoogleFonts.poppins(
                       color: Colors.white70,
                       fontSize: 13,
@@ -455,7 +446,7 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
                         Icon(Icons.home, size: 16, color: Colors.white),
                         SizedBox(width: 4),
                         Text(
-                          car['badge'],
+                          carMap['badge'],
                           style: GoogleFonts.poppins(
                             color: Colors.white,
                             fontSize: 12,
@@ -467,7 +458,7 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: car['delivery']
+                      color: carMap['delivery']
                           ? Color(0xFFD69C39)
                           : Colors.white10,
                       borderRadius: BorderRadius.circular(8),
@@ -478,17 +469,17 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
                         Icon(
                           Icons.local_shipping,
                           size: 16,
-                          color: car['delivery'] ? Colors.black : Colors.white,
+                          color: carMap['delivery'] ? Colors.black : Colors.white,
                         ),
                         SizedBox(width: 4),
                         Text(
-                          car['delivery']
+                          carMap['delivery']
                               ? "Home Delivery"
                               : "No Home Delivery",
                           style: GoogleFonts.poppins(
-                            color: car['delivery']
-                                ? Colors.black
-                                : Colors.white,
+                                                      color: carMap['delivery']
+                              ? Colors.black
+                              : Colors.white,
                             fontSize: 12,
                           ),
                         ),
@@ -505,9 +496,9 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
-                          car['fuel'] == 'EV'
+                          carMap['fuel'] == 'EV'
                               ? Icons.electric_car
-                              : car['fuel'] == 'Diesel'
+                              : carMap['fuel'] == 'Diesel'
                               ? Icons.local_gas_station
                               : Icons.local_gas_station,
                           size: 16,
@@ -515,7 +506,7 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
                         ),
                         SizedBox(width: 4),
                         Text(
-                          car['fuel'],
+                          carMap['fuel'],
                           style: GoogleFonts.poppins(
                             color: Colors.white,
                             fontSize: 12,
@@ -534,7 +525,7 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
               child: Row(
                 children: [
                   Text(
-                    car['price'],
+                    carMap['price'],
                     style: GoogleFonts.poppins(
                       color: Color(0xFFD69C39),
                       fontWeight: FontWeight.bold,
@@ -543,7 +534,7 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
                   ),
                   Spacer(),
                   Text(
-                    car['monthly'],
+                    carMap['monthly'],
                     style: GoogleFonts.poppins(
                       color: Colors.white70,
                       fontWeight: FontWeight.w600,

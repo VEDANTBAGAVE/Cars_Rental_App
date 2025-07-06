@@ -1,18 +1,76 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'booking_page.dart';
+import 'models/car.dart';
 
-class CarDetailsPage extends StatelessWidget {
-  final Map<String, dynamic> car;
+class CarDetailsPage extends StatefulWidget {
+  final Car car;
 
   const CarDetailsPage({super.key, required this.car});
 
   @override
+  State<CarDetailsPage> createState() => _CarDetailsPageState();
+}
+
+class _CarDetailsPageState extends State<CarDetailsPage> {
+  int currentImageIndex = 0;
+  late List<String> imageUrls;
+  late PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    // Use car.imageUrls (List<String>) for carousel
+    imageUrls = widget.car.imageUrls;
+    _pageController = PageController(
+      initialPage: currentImageIndex,
+      viewportFraction: 0.92,
+    );
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Helper for safe field extraction
+    T safe<T>(dynamic value, T fallback) {
+      if (value == null) return fallback;
+
+      // Handle int type
+      if (T == int) {
+        if (value is int) return value as T;
+        if (value is double) return value.toInt() as T;
+        if (value is String) {
+          int? parsed = int.tryParse(value);
+          return (parsed ?? fallback) as T;
+        }
+        return fallback;
+      }
+
+      // Handle double type
+      if (T == double) {
+        if (value is double) return value as T;
+        if (value is int) return value.toDouble() as T;
+        if (value is String) {
+          double? parsed = double.tryParse(value);
+          return (parsed ?? fallback) as T;
+        }
+        return fallback;
+      }
+
+      // Handle other types
+      if (value is T) return value;
+      return fallback;
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFF211F24),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 40, 16, 120),
+        padding: const EdgeInsets.fromLTRB(16, 40, 16, 24),
         children: [
           // Search bar
           Container(
@@ -34,7 +92,7 @@ class CarDetailsPage extends StatelessWidget {
                       hintText: "Search cars...",
                       hintStyle: GoogleFonts.poppins(color: Colors.white38),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.only(bottom: 2),
+                      contentPadding: const EdgeInsets.only(bottom: 2),
                     ),
                     cursorColor: Colors.white12,
                   ),
@@ -43,108 +101,132 @@ class CarDetailsPage extends StatelessWidget {
             ),
           ),
 
-          // Car image
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              Container(
-                margin: const EdgeInsets.symmetric(vertical: 18),
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1B1A20),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Image.network(
-                  car['image'],
-                  height: 170,
-                  fit: BoxFit.contain,
-                ),
-              ),
-              Positioned(
-                left: 0,
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back_ios, color: Colors.white70),
-                  onPressed: () {
-                    // handle previous image
-                  },
-                ),
-              ),
-              Positioned(
-                right: 0,
-                child: IconButton(
-                  icon: const Icon(
-                    Icons.arrow_forward_ios,
-                    color: Colors.white70,
+          // Image carousel
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 10),
+            padding: EdgeInsets.zero,
+            child: imageUrls.isNotEmpty
+                ? Column(
+                    children: [
+                      SizedBox(
+                        height: 200,
+                        child: PageView.builder(
+                          itemCount: imageUrls.length,
+                          controller: _pageController,
+                          physics: const BouncingScrollPhysics(),
+                          onPageChanged: (index) {
+                            setState(() {
+                              currentImageIndex = index;
+                            });
+                          },
+                          itemBuilder: (context, index) {
+                            double scale = 1.0;
+                            if (_pageController.hasClients) {
+                              double page =
+                                  _pageController.page ??
+                                  _pageController.initialPage.toDouble();
+                              double diff = (page - index).abs();
+                              // Use a curve for smoothness
+                              double curved = Curves.easeOut.transform(
+                                (1 - (diff * 0.8)).clamp(0.0, 1.0),
+                              );
+                              scale = 0.92 + (curved * 0.08); // 0.92 to 1.0
+                            }
+                            return Transform.scale(
+                              scale: scale,
+                              child: Container(
+                                margin: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                  horizontal: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(16),
+                                  color: Color(0xFF26242B),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Color.fromARGB(255, 255, 183, 0),
+                                      blurRadius: 6,
+                                      offset: Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(16),
+                                  child: Image.network(
+                                    imageUrls[index],
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            Container(
+                                              color: Colors.grey[800],
+                                              child: const Icon(
+                                                Icons.broken_image,
+                                                color: Colors.white54,
+                                                size: 60,
+                                              ),
+                                            ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                      if (imageUrls.length > 1)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 10.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(
+                              imageUrls.length,
+                              (index) => Container(
+                                margin: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                ),
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: currentImageIndex == index
+                                      ? const Color(0xFFD69C39)
+                                      : Colors.white24,
+                                  boxShadow: currentImageIndex == index
+                                      ? [
+                                          BoxShadow(
+                                            color: const Color(
+                                              0xFFD69C39,
+                                            ).withOpacity(0.5),
+                                            blurRadius: 8,
+                                            spreadRadius: 1,
+                                          ),
+                                        ]
+                                      : null,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  )
+                : Container(
+                    height: 220,
+                    color: Colors.grey[800],
+                    child: const Icon(
+                      Icons.image_not_supported,
+                      color: Colors.white54,
+                      size: 60,
+                    ),
                   ),
-                  onPressed: () {
-                    // handle next image
-                  },
-                ),
-              ),
-            ],
           ),
-
-          // Warranty bar
-          if (car['warranty'] != null && car['warranty'].toString().isNotEmpty)
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD69C39),
-                      borderRadius: const BorderRadius.only(
-                        topLeft: Radius.circular(12),
-                        bottomLeft: Radius.circular(12),
-                      ),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 10,
-                      horizontal: 16,
-                    ),
-                    child: Text(
-                      car['warranty'] ?? '',
-                      style: GoogleFonts.poppins(
-                        color: Colors.black,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                      ),
-                    ),
-                  ),
-                ),
-                if (car['warrantyDate'] != null &&
-                    car['warrantyDate'].toString().isNotEmpty)
-                  Container(
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2D2C30),
-                      borderRadius: const BorderRadius.only(
-                        topRight: Radius.circular(12),
-                        bottomRight: Radius.circular(12),
-                      ),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 10,
-                      horizontal: 16,
-                    ),
-                    child: Text(
-                      car['warrantyDate'],
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          const SizedBox(height: 16),
 
           // Car name
           Text(
-            car['name'] ?? '',
+            safe(widget.car.name, ''),
             style: GoogleFonts.poppins(
               color: Colors.white,
               fontWeight: FontWeight.w700,
-              fontSize: 18,
+              fontSize: 22,
             ),
           ),
           const SizedBox(height: 8),
@@ -153,17 +235,17 @@ class CarDetailsPage extends StatelessWidget {
           Row(
             children: [
               Text(
-                '${car['km']}',
+                '${safe(widget.car.meter, 0.0).toInt()} km',
                 style: GoogleFonts.poppins(color: Colors.white60, fontSize: 14),
               ),
               const Text('  |  ', style: TextStyle(color: Colors.white24)),
               Text(
-                '${car['type']}',
+                safe(widget.car.transmissionType, ''),
                 style: GoogleFonts.poppins(color: Colors.white60, fontSize: 14),
               ),
               const Text('  |  ', style: TextStyle(color: Colors.white24)),
               Text(
-                '${car['fuel']}',
+                safe(widget.car.fuelType, ''),
                 style: GoogleFonts.poppins(color: Colors.white60, fontSize: 14),
               ),
             ],
@@ -175,7 +257,7 @@ class CarDetailsPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                car['price'] ?? '',
+                '₹${safe(widget.car.pricePerDay, 0.0)}',
                 style: GoogleFonts.poppins(
                   color: const Color(0xFFD69C39),
                   fontWeight: FontWeight.bold,
@@ -198,8 +280,12 @@ class CarDetailsPage extends StatelessWidget {
           // Rental duration selector
           Row(
             children: [
-              Icon(Icons.calendar_today, color: Color(0xFFD69C39), size: 20),
-              SizedBox(width: 6),
+              const Icon(
+                Icons.calendar_today,
+                color: Color(0xFFD69C39),
+                size: 20,
+              ),
+              const SizedBox(width: 6),
               Text(
                 "Rental period: 1-30 days",
                 style: GoogleFonts.poppins(color: Colors.white70, fontSize: 14),
@@ -211,10 +297,10 @@ class CarDetailsPage extends StatelessWidget {
           // Location
           Row(
             children: [
-              Icon(Icons.location_on, color: Color(0xFFD69C39), size: 20),
-              SizedBox(width: 8),
+              const Icon(Icons.location_on, color: Color(0xFFD69C39), size: 20),
+              const SizedBox(width: 8),
               Text(
-                car['location'] ?? '',
+                safe(widget.car.location, ''),
                 style: GoogleFonts.poppins(
                   color: Colors.white,
                   fontSize: 16,
@@ -231,7 +317,10 @@ class CarDetailsPage extends StatelessWidget {
             runSpacing: 8,
             children: [
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white10,
                   borderRadius: BorderRadius.circular(8),
@@ -239,10 +328,10 @@ class CarDetailsPage extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.home, size: 16, color: Colors.white),
-                    SizedBox(width: 4),
+                    const Icon(Icons.home, size: 16, color: Colors.white),
+                    const SizedBox(width: 4),
                     Text(
-                      car['badge'] ?? '',
+                      '${safe(widget.car.seats, 0.0).toInt()} Seats',
                       style: GoogleFonts.poppins(
                         color: Colors.white,
                         fontSize: 12,
@@ -252,10 +341,13 @@ class CarDetailsPage extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
-                  color: car['delivery'] == true
-                      ? Color(0xFFD69C39)
+                  color: widget.car.delivery == true
+                      ? const Color(0xFFD69C39)
                       : Colors.white10,
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -265,17 +357,17 @@ class CarDetailsPage extends StatelessWidget {
                     Icon(
                       Icons.local_shipping,
                       size: 16,
-                      color: car['delivery'] == true
+                      color: widget.car.delivery == true
                           ? Colors.black
                           : Colors.white,
                     ),
-                    SizedBox(width: 4),
+                    const SizedBox(width: 4),
                     Text(
-                      car['delivery'] == true
+                      widget.car.delivery == true
                           ? "Home Delivery"
                           : "No Home Delivery",
                       style: GoogleFonts.poppins(
-                        color: car['delivery'] == true
+                        color: widget.car.delivery == true
                             ? Colors.black
                             : Colors.white,
                         fontSize: 12,
@@ -297,12 +389,12 @@ class CarDetailsPage extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => BookingPage(car: car),
+                    builder: (context) => BookingPage(car: widget.car),
                   ),
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFFD69C39),
+                backgroundColor: const Color(0xFFD69C39),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),

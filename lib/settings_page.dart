@@ -174,8 +174,6 @@ class SettingsPage extends StatelessWidget {
     BuildContext context, {
     required String flag,
     required String name,
-    String? version,
-    String? cache,
     required VoidCallback onTap,
   }) {
     return ListTile(

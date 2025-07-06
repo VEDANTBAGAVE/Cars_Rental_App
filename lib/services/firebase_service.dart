@@ -41,24 +41,26 @@ class FirebaseService {
           .collection('cars')
           .where('isFeatured', isEqualTo: true)
           .get();
-      
+
       List<Car> allFeaturedCars = snapshot.docs.map((doc) {
         Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
         data['id'] = doc.id;
         return Car.fromMap(data);
       }).toList();
-      
+
       // Randomly select 3 cars
       List<Car> randomFeaturedCars = [];
       if (allFeaturedCars.isNotEmpty) {
         // Shuffle the list to randomize
         allFeaturedCars.shuffle();
-        
+
         // Take up to 3 cars
         randomFeaturedCars = allFeaturedCars.take(3).toList();
       }
-      
-      print('Found ${allFeaturedCars.length} featured cars, randomly selected ${randomFeaturedCars.length}');
+
+      print(
+        'Found ${allFeaturedCars.length} featured cars, randomly selected ${randomFeaturedCars.length}',
+      );
       return randomFeaturedCars;
     } catch (e) {
       print('Error getting featured cars: $e');
@@ -117,14 +119,14 @@ class FirebaseService {
       QuerySnapshot nameSnapshot = await _firestore
           .collection('cars')
           .where('name', isGreaterThanOrEqualTo: query)
-          .where('name', isLessThan: query + '\uf8ff')
+          .where('name', isLessThan: '$query\uf8ff')
           .get();
 
       // Search by location (case insensitive)
       QuerySnapshot locationSnapshot = await _firestore
           .collection('cars')
           .where('location', isGreaterThanOrEqualTo: query)
-          .where('location', isLessThan: query + '\uf8ff')
+          .where('location', isLessThan: '$query\uf8ff')
           .get();
 
       Set<String> carIds = {};
@@ -207,7 +209,7 @@ class FirebaseService {
       await _firestore.collection('cars').add(car.toMap());
     } catch (e) {
       print('Error adding car: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -217,7 +219,7 @@ class FirebaseService {
       await _firestore.collection('cars').doc(carId).update(data);
     } catch (e) {
       print('Error updating car: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -227,7 +229,7 @@ class FirebaseService {
       await _firestore.collection('cars').doc(carId).delete();
     } catch (e) {
       print('Error deleting car: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -262,9 +264,9 @@ class FirebaseService {
           // Extract brand from car name
           String name = data['name'] ?? '';
           String brand = '';
-          if (name.contains('Mahindra'))
+          if (name.contains('Mahindra')) {
             brand = 'Mahindra';
-          else if (name.contains('Tata'))
+          } else if (name.contains('Tata'))
             brand = 'Tata';
           else if (name.contains('BMW'))
             brand = 'BMW';
@@ -331,7 +333,7 @@ class FirebaseService {
       print('Successfully updated all cars with home page fields');
     } catch (e) {
       print('Error updating cars for home page: $e');
-      throw e;
+      rethrow;
     }
   }
 }
