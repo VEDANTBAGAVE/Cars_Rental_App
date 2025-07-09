@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'main_scaffold.dart'; // <-- Import your MainScaffold
+import 'main_scaffold.dart';
+import 'screens/login_screen.dart';
+import 'services/auth_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -13,6 +15,7 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  final AuthService _authService = AuthService();
 
   @override
   void initState() {
@@ -22,13 +25,32 @@ class _SplashScreenState extends State<SplashScreen>
       duration: const Duration(seconds: 2),
     )..repeat();
 
-    // Simulate loading for 3 seconds, then navigate to MainScaffold
-    Timer(const Duration(seconds: 3), () {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const MainScaffold()),
-      );
-    });
+    // Check login status and navigate accordingly
+    _checkLoginStatus();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    // Wait for 3 seconds to show splash screen
+    await Future.delayed(const Duration(seconds: 3));
+    
+    // Check if user is logged in
+    bool isLoggedIn = await _authService.isLoggedIn();
+    
+    if (mounted) {
+      if (isLoggedIn) {
+        // User is logged in, go to main app
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const MainScaffold()),
+        );
+      } else {
+        // User is not logged in, go to login screen
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+        );
+      }
+    }
   }
 
   @override

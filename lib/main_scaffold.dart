@@ -4,10 +4,7 @@ import 'home_page.dart';
 import 'browse_cars_page.dart';
 import 'account_page.dart';
 import 'sell_car_page.dart';
-import 'inbox_page.dart';
-// import 'sell_car_page.dart';
-// import 'inbox_page.dart';
-// import 'account_page.dart';
+import 'bookings_list_page.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -23,12 +20,8 @@ class _MainScaffoldState extends State<MainScaffold> {
     HomePage(),
     BrowseCarsPage(),
     SellCarPage(),
-    InboxPage(),
+    BookingsListPage(),
     AccountPage(),
-
-    // SellCarPage(),
-    // InboxPage(),
-    // AccountPage(),
   ];
 
   @override
@@ -57,8 +50,8 @@ class _MainScaffoldState extends State<MainScaffold> {
           ),
           BottomNavigationBarItem(icon: Icon(Icons.sell), label: 'Sell Car'),
           BottomNavigationBarItem(
-            icon: Icon(Icons.mail_outline),
-            label: 'Inbox',
+            icon: Icon(Icons.book_online),
+            label: 'Bookings',
           ),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Account'),
         ],

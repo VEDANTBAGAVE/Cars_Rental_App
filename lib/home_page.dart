@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'dart:async';
 import 'services/firebase_service.dart';
 import 'models/car.dart';
 import 'car_details_page.dart';
+import 'browse_cars_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -12,12 +14,7 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage>
-    with SingleTickerProviderStateMixin {
-  late Animation<double> animation;
-  late AnimationController animController;
-  bool isForward = false;
-
+class _HomePageState extends State<HomePage> {
   // Firebase service
   final FirebaseService _firebaseService = FirebaseService();
 
@@ -32,37 +29,15 @@ class _HomePageState extends State<HomePage>
   bool isLoadingDeals = true;
   bool isLoadingTrending = true;
 
-  // Search
-  final TextEditingController _searchController = TextEditingController();
-  List<Car> searchResults = [];
-  bool isSearching = false;
-
   @override
   void initState() {
     super.initState();
-    animController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 1), // Use a realistic duration
-    );
-
-    final curvedAnimation = CurvedAnimation(
-      parent: animController,
-      curve: Curves.easeOutExpo,
-    );
-
-    animation = Tween<double>(begin: 0, end: 150).animate(curvedAnimation)
-      ..addListener(() {
-        setState(() {});
-      });
-
     // Load data from Firebase
     _loadHomeData();
   }
 
   @override
   void dispose() {
-    animController.dispose();
-    _searchController.dispose();
     super.dispose();
   }
 
@@ -135,34 +110,6 @@ class _HomePageState extends State<HomePage>
       print('Error loading trending cars: $e');
       setState(() {
         isLoadingTrending = false;
-      });
-    }
-  }
-
-  // Search functionality
-  Future<void> _performSearch(String query) async {
-    if (query.isEmpty) {
-      setState(() {
-        searchResults = [];
-        isSearching = false;
-      });
-      return;
-    }
-
-    setState(() {
-      isSearching = true;
-    });
-
-    try {
-      final results = await _firebaseService.searchCars(query);
-      setState(() {
-        searchResults = results;
-        isSearching = false;
-      });
-    } catch (e) {
-      print('Error searching cars: $e');
-      setState(() {
-        isSearching = false;
       });
     }
   }
@@ -299,91 +246,25 @@ class _HomePageState extends State<HomePage>
                     ],
                   ),
                 ),
+                // Simple search icon that redirects to browse cars page
                 Container(
-                  width: 200,
+                  width: 50,
                   height: 50,
                   margin: const EdgeInsets.only(left: 10, top: 10),
-                  child: Stack(
-                    children: [
-                      // The animated input always extends right up to the icon
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        bottom: 0,
-                        child: AnimatedContainer(
-                          width: animation.value > 50 ? animation.value : 0,
-                          height: 50,
-                          duration: const Duration(milliseconds: 300),
-                          decoration: BoxDecoration(
-                            color: Colors.black,
-                            borderRadius: BorderRadius.circular(50),
-                          ),
-                          alignment: Alignment.centerLeft,
-                          child: animation.value > 50
-                              ? Padding(
-                                  padding: const EdgeInsets.only(
-                                    left: 20,
-                                    bottom: 13,
-                                    right: 60,
-                                  ),
-                                  child: TextField(
-                                    controller: _searchController,
-                                    cursorColor: Colors.white12,
-                                    style: const TextStyle(color: Colors.white),
-                                    decoration: const InputDecoration(
-                                      border: InputBorder.none,
-                                      hintText: 'Search cars...',
-                                      hintStyle: TextStyle(
-                                        color: Colors.white54,
-                                      ),
-                                    ),
-                                    onChanged: (value) {
-                                      if (value.isNotEmpty) {
-                                        _performSearch(value);
-                                      } else {
-                                        setState(() {
-                                          searchResults = [];
-                                          isSearching = false;
-                                        });
-                                      }
-                                    },
-                                  ),
-                                )
-                              : null,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(50),
+                    color: Color(0xFFD69C39),
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.search, color: Colors.white),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => BrowseCarsPage(),
                         ),
-                      ),
-                      // The icon stays fixed at the right and overlaps the input's right edge
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        bottom: 0,
-                        child: Container(
-                          width: 50,
-                          height: 50,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(50),
-                            color: Color(0xFFD69C39),
-                          ),
-                          child: IconButton(
-                            icon: const Icon(Icons.search, color: Colors.white),
-                            onPressed: () {
-                              if (!isForward) {
-                                animController.forward();
-                                isForward = true;
-                              } else {
-                                animController.reverse();
-                                isForward = false;
-                                _searchController.clear();
-                                setState(() {
-                                  searchResults = [];
-                                  isSearching = false;
-                                });
-                              }
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
                 ),
               ],
@@ -403,45 +284,8 @@ class _HomePageState extends State<HomePage>
             80,
           ), // enough padding for nav bar
           children: [
-            // Search Results
-            if (isSearching)
-              Container(
-                padding: EdgeInsets.all(16),
-                child: Center(
-                  child: CircularProgressIndicator(color: Color(0xFFD69C39)),
-                ),
-              ),
-
-            if (searchResults.isNotEmpty)
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Search Results',
-                    style: GoogleFonts.poppins(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  SizedBox(height: 10),
-                  SizedBox(
-                    height: 220,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: searchResults.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 14),
-                      itemBuilder: (context, index) {
-                        return carCard(searchResults[index]);
-                      },
-                    ),
-                  ),
-                  SizedBox(height: 20),
-                ],
-              ),
-
             // Featured Cars Carousel
-            if (!isSearching && !isLoadingFeatured)
+            if (!isLoadingFeatured)
               CarouselSlider(
                 options: CarouselOptions(
                   height: 200,
@@ -461,8 +305,7 @@ class _HomePageState extends State<HomePage>
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) =>
-                                  CarDetailsPage(car: car),
+                              builder: (context) => CarDetailsPage(car: car),
                             ),
                           );
                         },
@@ -544,21 +387,20 @@ class _HomePageState extends State<HomePage>
             const SizedBox(height: 18),
 
             // Deals Section
-            if (!isSearching)
-              Row(
-                children: [
-                  Icon(
-                    Icons.local_offer_rounded,
-                    size: 30,
-                    color: Color(0xFFD69C39),
-                  ),
-                  SizedBox(width: 5),
-                  sectionTitle('Deals'),
-                ],
-              ),
+            Row(
+              children: [
+                Icon(
+                  Icons.local_offer_rounded,
+                  size: 30,
+                  color: Color(0xFFD69C39),
+                ),
+                SizedBox(width: 5),
+                sectionTitle('Deals'),
+              ],
+            ),
             const SizedBox(height: 10),
 
-            if (!isSearching && !isLoadingDeals)
+            if (!isLoadingDeals)
               SizedBox(
                 height: 180,
                 child: ListView.separated(
@@ -582,72 +424,63 @@ class _HomePageState extends State<HomePage>
             const SizedBox(height: 18),
 
             // Explore Cars Section
-            if (!isSearching)
-              Row(
-                children: [
-                  Icon(
-                    Icons.explore_rounded,
-                    size: 30,
-                    color: Color(0xFFD69C39),
-                  ),
-                  SizedBox(width: 5),
-                  sectionTitle('Explore Cars for You'),
-                ],
-              ),
+            Row(
+              children: [
+                Icon(Icons.explore_rounded, size: 30, color: Color(0xFFD69C39)),
+                SizedBox(width: 5),
+                sectionTitle('Explore Cars for You'),
+              ],
+            ),
             const SizedBox(height: 10),
-
-            if (!isSearching)
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: List.generate(filters.length, (index) {
-                    return GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          selectedFilterIndex = index;
-                        });
-                        _filterCarsByPrice(index);
-                      },
-                      child: filterChip(
-                        filters[index],
-                        selectedFilterIndex == index,
-                      ),
-                    );
-                  }),
-                ),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: List.generate(filters.length, (index) {
+                  return GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        selectedFilterIndex = index;
+                      });
+                      _filterCarsByPrice(index);
+                    },
+                    child: filterChip(
+                      filters[index],
+                      selectedFilterIndex == index,
+                    ),
+                  );
+                }),
               ),
+            ),
             const SizedBox(height: 15),
 
-            if (!isSearching)
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: brands
-                      .map(
-                        (brand) => brandButton(brand['image']!, brand['name']!),
-                      )
-                      .toList(),
-                ),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: brands
+                    .map(
+                      (brand) => brandButton(brand['image']!, brand['name']!),
+                    )
+                    .toList(),
               ),
+            ),
             const SizedBox(height: 24),
 
             // Trending Cars Section
-            if (!isSearching)
-              Row(
-                children: [
-                  Icon(
-                    Icons.trending_up_rounded,
-                    size: 30,
-                    color: Color(0xFFD69C39),
-                  ),
-                  SizedBox(width: 5),
-                  sectionTitle('Trending Cars in India'),
-                ],
-              ),
+            Row(
+              children: [
+                Icon(
+                  Icons.trending_up_rounded,
+                  size: 30,
+                  color: Color(0xFFD69C39),
+                ),
+                SizedBox(width: 5),
+                sectionTitle('Trending Cars in India'),
+              ],
+            ),
             const SizedBox(height: 8),
 
-            if (!isSearching && !isLoadingTrending)
+            if (!isLoadingTrending)
               SizedBox(
                 height: 220,
                 child: ListView.separated(
@@ -692,9 +525,7 @@ class _HomePageState extends State<HomePage>
       onTap: () {
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (context) => CarDetailsPage(car: car),
-          ),
+          MaterialPageRoute(builder: (context) => CarDetailsPage(car: car)),
         );
       },
       child: Container(
@@ -736,10 +567,7 @@ class _HomePageState extends State<HomePage>
                     left: 8,
                     top: 8,
                     child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 3,
-                      ),
+                      padding: EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                       decoration: BoxDecoration(
                         color: Colors.green,
                         borderRadius: BorderRadius.circular(4),
@@ -789,7 +617,7 @@ class _HomePageState extends State<HomePage>
                         SizedBox(width: 8),
                       ],
                       Text(
-                        car.hasDiscount 
+                        car.hasDiscount
                             ? '₹${car.discountedPrice.toStringAsFixed(0)}/day'
                             : '₹${car.pricePerDay.toStringAsFixed(0)}/day',
                         style: GoogleFonts.poppins(

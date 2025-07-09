@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'models/car.dart';
+import 'models/booking.dart';
+import 'services/firebase_service.dart';
+import 'services/auth_service.dart';
 
 class BookingPage extends StatefulWidget {
   final Car car;
@@ -21,6 +24,10 @@ class _BookingPageState extends State<BookingPage> {
   final _addressController = TextEditingController();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+
+  final FirebaseService _firebaseService = FirebaseService();
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
 
   double get dailyRate {
     return widget.car.hasDiscount ? widget.car.discountedPrice : widget.car.pricePerDay;
@@ -393,10 +400,11 @@ class _BookingPageState extends State<BookingPage> {
                   (pickUpDate != null &&
                       dropOffDate != null &&
                       _nameController.text.isNotEmpty &&
-                      _phoneController.text.isNotEmpty)
+                      _phoneController.text.isNotEmpty &&
+                      !_isLoading)
                   ? () {
                       // Handle booking confirmation
-                      _showBookingConfirmation();
+                      _createBooking();
                     }
                   : null,
               style: ElevatedButton.styleFrom(
@@ -405,14 +413,37 @@ class _BookingPageState extends State<BookingPage> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: Text(
-                "Confirm Booking",
-                style: GoogleFonts.poppins(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              child: _isLoading
+                  ? Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Text(
+                          "Creating Booking...",
+                          style: GoogleFonts.poppins(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    )
+                  : Text(
+                      "Confirm Booking",
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
             ),
           ),
           const SizedBox(height: 20),
@@ -491,21 +522,108 @@ class _BookingPageState extends State<BookingPage> {
     );
   }
 
-  void _showBookingConfirmation() {
+  Future<void> _createBooking() async {
+    if (_authService.currentUser == null) {
+      _showErrorDialog("Please login to book a car");
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Create booking object
+      final booking = Booking(
+        id: '', // Will be set by Firestore
+        userId: _authService.currentUser!.uid,
+        carId: widget.car.id,
+        carName: widget.car.name,
+        carImageUrl: widget.car.imageUrl,
+        carBrand: widget.car.brand,
+        pickUpDate: pickUpDate!,
+        pickUpTime: pickUpTime!,
+        dropOffDate: dropOffDate!,
+        dropOffTime: dropOffTime!,
+        deliveryAddress: _addressController.text.trim(),
+        customerName: _nameController.text.trim(),
+        customerPhone: _phoneController.text.trim(),
+        dailyRate: dailyRate,
+        totalPrice: totalPrice,
+        rentalDays: rentalDuration.inDays,
+        status: 'pending',
+        createdAt: DateTime.now(),
+        paymentStatus: 'pending',
+      );
+
+      // Save booking to Firebase
+      final bookingId = await _firebaseService.createBooking(booking);
+      
+      setState(() {
+        _isLoading = false;
+      });
+
+      // Show success dialog
+      _showBookingConfirmation(bookingId);
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      _showErrorDialog("Failed to create booking. Please try again.");
+      print('Error creating booking: $e');
+    }
+  }
+
+  void _showBookingConfirmation(String bookingId) {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (context) => AlertDialog(
         backgroundColor: Color(0xFF2D2C30),
-        title: Text(
-          "Booking Confirmed!",
-          style: GoogleFonts.poppins(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-          ),
+        title: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green, size: 24),
+            SizedBox(width: 8),
+            Text(
+              "Booking Confirmed!",
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
-        content: Text(
-          "Your booking for ${widget.car.name} has been confirmed. You will receive a confirmation email shortly.",
-          style: GoogleFonts.poppins(color: Colors.white70),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Your booking for ${widget.car.name} has been confirmed.",
+              style: GoogleFonts.poppins(color: Colors.white70),
+            ),
+            SizedBox(height: 8),
+            Text(
+              "Booking ID: $bookingId",
+              style: GoogleFonts.poppins(
+                color: Color(0xFFD69C39),
+                fontWeight: FontWeight.w600,
+                fontSize: 12,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              "Total Amount: ₹${totalPrice.toStringAsFixed(0)}",
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              "We'll contact you shortly to confirm payment and delivery details.",
+              style: GoogleFonts.poppins(color: Colors.white54, fontSize: 12),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -513,6 +631,44 @@ class _BookingPageState extends State<BookingPage> {
               Navigator.of(context).pop();
               Navigator.of(context).pop();
             },
+            child: Text(
+              "View My Bookings",
+              style: GoogleFonts.poppins(
+                color: Color(0xFFD69C39),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Color(0xFF2D2C30),
+        title: Row(
+          children: [
+            Icon(Icons.error, color: Colors.red, size: 24),
+            SizedBox(width: 8),
+            Text(
+              "Error",
+              style: GoogleFonts.poppins(
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          message,
+          style: GoogleFonts.poppins(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
             child: Text(
               "OK",
               style: GoogleFonts.poppins(

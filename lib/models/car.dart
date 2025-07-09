@@ -140,4 +140,4 @@ class Car {
   
   // Get discount percentage
   double get discountPercentage => pricePerDay > 0 ? (discountAmount / pricePerDay) * 100 : 0;
-}
+} 

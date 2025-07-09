@@ -4,6 +4,7 @@ import 'car_details_page.dart';
 import '../models/car.dart';
 import '../services/firebase_service.dart';
 import 'package:intl/intl.dart';
+import 'dart:async';
 
 class BrowseCarsPage extends StatefulWidget {
   const BrowseCarsPage({super.key});
@@ -35,11 +36,58 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
   String? selectedFuel;
   RangeValues? selectedPriceRange;
   String? selectedSort;
+  
+  // Search functionality
+  final TextEditingController _searchController = TextEditingController();
+  List<Car> searchResults = [];
+  bool isSearching = false;
+  Timer? _searchDebounce;
 
   @override
   void initState() {
     super.initState();
     loadCars();
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchDebounce?.cancel();
+    super.dispose();
+  }
+
+  // Search functionality with debouncing
+  Future<void> _performSearch(String query) async {
+    if (query.isEmpty) {
+      setState(() {
+        searchResults = [];
+        isSearching = false;
+      });
+      return;
+    }
+
+    // Cancel previous search
+    _searchDebounce?.cancel();
+
+    // Debounce search for 500ms
+    _searchDebounce = Timer(const Duration(milliseconds: 500), () async {
+      setState(() {
+        isSearching = true;
+      });
+
+      try {
+        final results = await _firebaseService.searchCars(query);
+        setState(() {
+          searchResults = results;
+          isSearching = false;
+        });
+      } catch (e) {
+        print('Error searching cars: $e');
+        setState(() {
+          isSearching = false;
+        });
+      }
+    });
   }
 
   Future<void> loadCars() async {
@@ -355,7 +403,7 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
           ListView(
             padding: const EdgeInsets.fromLTRB(16, 40, 16, 120),
             children: [
-              // Simple Search Bar
+              // Search Bar
               Container(
                 height: 50,
                 margin: const EdgeInsets.only(bottom: 16),
@@ -370,28 +418,111 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: TextField(
+                        controller: _searchController,
                         style: const TextStyle(color: Colors.white),
                         decoration: InputDecoration(
-                          hintText: "Search",
+                          hintText: "Search cars, brands, or locations...",
                           hintStyle: GoogleFonts.poppins(color: Colors.white38),
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.only(bottom: 2),
                         ),
                         cursorColor: Colors.white12,
+                        onChanged: (value) {
+                          if (value.isNotEmpty) {
+                            _performSearch(value);
+                          } else {
+                            setState(() {
+                              searchResults = [];
+                              isSearching = false;
+                            });
+                          }
+                        },
                       ),
                     ),
+                    if (_searchController.text.isNotEmpty)
+                      IconButton(
+                        icon: const Icon(Icons.clear, color: Colors.white60),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() {
+                            searchResults = [];
+                            isSearching = false;
+                          });
+                        },
+                      ),
                   ],
                 ),
               ),
-              // Showing X cars in
-              Text(
-                'Showing ${filteredCars.where((car) => car.location == userCity).length} cars in',
-                style: GoogleFonts.poppins(
-                  color: Colors.white70,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
+              
+              // Search Results
+              if (isSearching)
+                Container(
+                  padding: EdgeInsets.all(16),
+                  child: Center(
+                    child: CircularProgressIndicator(color: Color(0xFFD69C39)),
+                  ),
                 ),
-              ),
+
+              if (searchResults.isNotEmpty)
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Search Results (${searchResults.length})',
+                      style: GoogleFonts.poppins(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    SizedBox(height: 10),
+                    ...searchResults.map((car) => carCard(car)),
+                    SizedBox(height: 20),
+                  ],
+                ),
+
+              if (!isSearching && _searchController.text.isNotEmpty && searchResults.isEmpty)
+                Container(
+                  padding: EdgeInsets.all(32),
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.search_off,
+                        size: 64,
+                        color: Colors.white38,
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        'No cars found',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'Try searching with different keywords',
+                        style: GoogleFonts.poppins(
+                          color: Colors.white54,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              // Regular content (only show when not searching)
+              if (!isSearching) ...[
+                // Showing X cars in
+                Text(
+                  'Showing ${filteredCars.where((car) => car.location == userCity).length} cars in',
+                  style: GoogleFonts.poppins(
+                    color: Colors.white70,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
               // User location and Change option
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -430,10 +561,11 @@ class _BrowseCarsPageState extends State<BrowseCarsPage> {
                 ],
               ),
               const SizedBox(height: 16),
-              // Car List
-              ...filteredCars
-                  .where((car) => car.location == userCity)
-                  .map((car) => carCard(car)),
+                // Car List
+                ...filteredCars
+                    .where((car) => car.location == userCity)
+                    .map((car) => carCard(car)),
+              ],
               const SizedBox(height: 90),
             ],
           ),

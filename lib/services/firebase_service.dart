@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/car.dart';
+import '../models/booking.dart';
 
 class FirebaseService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -112,43 +113,40 @@ class FirebaseService {
     }
   }
 
-  // Search cars by name, brand, or location
+  // Search cars by name, brand, or location (case insensitive)
   Future<List<Car>> searchCars(String query) async {
     try {
-      // Search by name (case insensitive)
-      QuerySnapshot nameSnapshot = await _firestore
-          .collection('cars')
-          .where('name', isGreaterThanOrEqualTo: query)
-          .where('name', isLessThan: '$query\uf8ff')
-          .get();
+      // Convert query to lowercase for case-insensitive search
+      String lowerQuery = query.toLowerCase().trim();
+      
+      if (lowerQuery.isEmpty) {
+        return [];
+      }
 
-      // Search by location (case insensitive)
-      QuerySnapshot locationSnapshot = await _firestore
-          .collection('cars')
-          .where('location', isGreaterThanOrEqualTo: query)
-          .where('location', isLessThan: '$query\uf8ff')
-          .get();
-
+      // Get all cars and filter them client-side for case-insensitive search
+      QuerySnapshot snapshot = await _firestore.collection('cars').get();
+      
       Set<String> carIds = {};
       List<Car> cars = [];
 
-      // Process name results
-      for (var doc in nameSnapshot.docs) {
-        if (!carIds.contains(doc.id)) {
-          carIds.add(doc.id);
-          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-          data['id'] = doc.id;
-          cars.add(Car.fromMap(data));
-        }
-      }
-
-      // Process location results
-      for (var doc in locationSnapshot.docs) {
-        if (!carIds.contains(doc.id)) {
-          carIds.add(doc.id);
-          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
-          data['id'] = doc.id;
-          cars.add(Car.fromMap(data));
+      for (var doc in snapshot.docs) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        data['id'] = doc.id;
+        
+        // Check if any field contains the search query (case insensitive)
+        String name = (data['name'] ?? '').toString().toLowerCase();
+        String brand = (data['brand'] ?? '').toString().toLowerCase();
+        String location = (data['location'] ?? '').toString().toLowerCase();
+        
+        // Check if query matches any of the fields
+        if (name.contains(lowerQuery) || 
+            brand.contains(lowerQuery) || 
+            location.contains(lowerQuery)) {
+          
+          if (!carIds.contains(doc.id)) {
+            carIds.add(doc.id);
+            cars.add(Car.fromMap(data));
+          }
         }
       }
 
@@ -230,6 +228,106 @@ class FirebaseService {
     } catch (e) {
       print('Error deleting car: $e');
       rethrow;
+    }
+  }
+
+  // Booking methods
+  Future<String> createBooking(Booking booking) async {
+    try {
+      DocumentReference docRef = await _firestore.collection('bookings').add(booking.toMap());
+      return docRef.id;
+    } catch (e) {
+      print('Error creating booking: $e');
+      rethrow;
+    }
+  }
+
+  // Get user's bookings
+  Future<List<Booking>> getUserBookings(String userId) async {
+    try {
+      QuerySnapshot snapshot = await _firestore
+          .collection('bookings')
+          .where('userId', isEqualTo: userId)
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      List<Booking> bookings = snapshot.docs.map((doc) {
+        return Booking.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+      }).toList();
+
+      return bookings;
+    } catch (e) {
+      print('Error getting user bookings: $e');
+      return [];
+    }
+  }
+
+  // Get booking by ID
+  Future<Booking?> getBookingById(String bookingId) async {
+    try {
+      DocumentSnapshot doc = await _firestore
+          .collection('bookings')
+          .doc(bookingId)
+          .get();
+      
+      if (doc.exists) {
+        return Booking.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+      }
+      return null;
+    } catch (e) {
+      print('Error getting booking: $e');
+      return null;
+    }
+  }
+
+  // Update booking status
+  Future<void> updateBookingStatus(String bookingId, String status) async {
+    try {
+      await _firestore
+          .collection('bookings')
+          .doc(bookingId)
+          .update({
+        'status': status,
+        'updatedAt': Timestamp.now(),
+      });
+    } catch (e) {
+      print('Error updating booking status: $e');
+      rethrow;
+    }
+  }
+
+  // Cancel booking
+  Future<void> cancelBooking(String bookingId) async {
+    try {
+      await _firestore
+          .collection('bookings')
+          .doc(bookingId)
+          .update({
+        'status': 'cancelled',
+        'updatedAt': Timestamp.now(),
+      });
+    } catch (e) {
+      print('Error cancelling booking: $e');
+      rethrow;
+    }
+  }
+
+  // Get all bookings (for admin)
+  Future<List<Booking>> getAllBookings() async {
+    try {
+      QuerySnapshot snapshot = await _firestore
+          .collection('bookings')
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      List<Booking> bookings = snapshot.docs.map((doc) {
+        return Booking.fromMap(doc.data() as Map<String, dynamic>, doc.id);
+      }).toList();
+
+      return bookings;
+    } catch (e) {
+      print('Error getting all bookings: $e');
+      return [];
     }
   }
 
